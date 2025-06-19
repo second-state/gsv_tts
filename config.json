@@ -1,0 +1,15 @@
+{
+    "bert_model_path": "resource/bert_model.pt",
+    "g2pw_model_path": "resource/g2pw_model.pt",
+    "ssl_model_path": "resource/ssl_model.pt",
+    "mini_bart_g2p_path": "resource/mini-bart-g2p.pt",
+    "speaker": [
+        {
+            "name": "ht",
+            "t2s_path": "resource/t2s.pt",
+            "vits_path": "resource/vits.pt",
+            "ref_audio_path": "resource/chen1_ref.wav",
+            "ref_text": "声音,是有温度的.夜晚的声音,会发光."
+        }
+    ]
+}

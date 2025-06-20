@@ -1,15 +1,29 @@
 {
-    "bert_model_path": "resource/bert_model.pt",
-    "g2pw_model_path": "resource/g2pw_model.pt",
-    "ssl_model_path": "resource/ssl_model.pt",
-    "mini_bart_g2p_path": "resource/mini-bart-g2p.pt",
+    "bert_model_path": "resources/bert_model.pt",
+    "g2pw_model_path": "resources/g2pw_model.pt",
+    "ssl_model_path": "resources/ssl_model.pt",
+    "mini_bart_g2p_path": "resources/mini-bart-g2p.pt",
     "speaker": [
         {
             "name": "ht",
-            "t2s_path": "resource/t2s.pt",
-            "vits_path": "resource/vits.pt",
-            "ref_audio_path": "resource/chen1_ref.wav",
-            "ref_text": "声音,是有温度的.夜晚的声音,会发光."
+            "t2s_path": "resources/t2s.pt",
+            "vits_path": "resources/vits.pt",
+            "ref_audio_path": "resources/ht.wav",
+            "ref_text": "说真的，这件衣服才配得上本小姐嘛。"
+        },
+        {
+            "name": "ad",
+            "t2s_path": "resources/t2s.pt",
+            "vits_path": "resources/vits.pt",
+            "ref_audio_path": "resources/ad.wav",
+            "ref_text": "你这老坏蛋，我找了你这么久，真没想到在这里找到你。他说。"
+        },
+        {
+            "name": "cooper",
+            "t2s_path": "resources/t2s.pt",
+            "vits_path": "resources/vits.pt",
+            "ref_audio_path": "resources/cooper.wav",
+            "ref_text": "The birds are singing again. The sky is clearing."
         }
     ]
 }

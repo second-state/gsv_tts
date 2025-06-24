@@ -4,7 +4,10 @@ use axum::{
     routing::{get, post},
 };
 use clap::{Parser, command};
+use std::{collections::HashMap, fs};
 use tts::config::TTSConfig;
+
+use axum::extract::Query;
 
 mod tts;
 
@@ -55,20 +58,29 @@ fn app(tts_state: tts::TTSService) -> Router {
 }
 
 #[cfg(debug_assertions)]
-async fn index_page() -> Html<String> {
-    use std::fs;
-
+async fn index_page(Query(params): Query<HashMap<String, String>>) -> Html<String> {
     log::info!("Running in debug mode, reading index.html from resources directory");
 
-    let index_html =
-        fs::read_to_string("./resources/index.html").expect("Failed to read index.html");
-
-    Html(index_html)
+    match params.get("lang").map(|s| s.as_str()) {
+        Some("zh") => {
+            let index_zh_html = fs::read_to_string("./resources/index.zh.html")
+                .expect("Failed to read index.zh.html");
+            Html(index_zh_html)
+        }
+        _ => {
+            let index_html =
+                fs::read_to_string("./resources/index.html").expect("Failed to read index.html");
+            Html(index_html)
+        }
+    }
 }
 
 #[cfg(not(debug_assertions))]
-async fn index_page() -> Html<&'static str> {
+async fn index_page(Query(params): Query<HashMap<String, String>>) -> Html<&'static str> {
     static INDEX_HTML: &str = include_str!("../resources/index.html");
-
-    Html(&INDEX_HTML)
+    static INDEX_ZH_HTML: &str = include_str!("../resources/index.zh.html");
+    match params.get("lang").map(|s| s.as_str()) {
+        Some("zh") => Html(INDEX_ZH_HTML),
+        _ => Html(&INDEX_HTML),
+    }
 }

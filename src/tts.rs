@@ -39,8 +39,11 @@ pub struct TTSRequest {
     pub input: String,
     #[serde(alias = "voice")]
     pub speaker: String,
+    #[allow(unused)]
     #[serde(default)]
     pub response_format: Option<String>,
+    #[serde(default)]
+    pub sample_rate: Option<usize>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -111,8 +114,8 @@ struct TTSSpeaker {
 }
 
 pub struct TTSEngine {
-    pub speakers: HashMap<String, TTSSpeaker>,
-    pub g2p: G2p,
+    speakers: HashMap<String, TTSSpeaker>,
+    g2p: G2p,
 }
 
 impl TTSEngine {
@@ -154,7 +157,13 @@ impl TTSEngine {
         self.speakers.keys().cloned().collect()
     }
 
-    pub fn infer(&self, name: &str, text: &str) -> anyhow::Result<Vec<f32>> {
+    pub fn infer(
+        &self,
+        name: &str,
+        text: &str,
+        sample_rate: Option<usize>,
+    ) -> anyhow::Result<Vec<f32>> {
+        let sample_rate = sample_rate.unwrap_or(32000);
         let _g = gpt_sovits_rs::tch::no_grad_guard();
         let speaker = self
             .speakers
@@ -200,7 +209,11 @@ impl TTSEngine {
             return Ok(Vec::new());
         }
 
-        let audio = Tensor::cat(&audios, 0);
+        let mut audio = Tensor::cat(&audios, 0);
+        if sample_rate != 32000 {
+            log::debug!("resample audio from 32000 to {}", sample_rate);
+            audio = speaker.speaker.ssl.resample(&audio, 32000, sample_rate)?;
+        }
         let audio_size = audio.size1().unwrap() as usize;
 
         let mut samples = vec![0f32; audio_size];
@@ -215,8 +228,10 @@ impl TTSEngine {
         &self,
         name: &str,
         text: &str,
+        sample_rate: Option<usize>,
         mut callback: F,
     ) -> anyhow::Result<()> {
+        let sample_rate = sample_rate.unwrap_or(32000);
         let _g = gpt_sovits_rs::tch::no_grad_guard();
 
         let speaker = self
@@ -241,7 +256,10 @@ impl TTSEngine {
                 15,
             );
             match audio_32k {
-                Ok(audio) => {
+                Ok(mut audio) => {
+                    if sample_rate != 32000 {
+                        audio = speaker.speaker.ssl.resample(&audio, 32000, sample_rate)?;
+                    }
                     let audio_size = audio.size1().unwrap() as usize;
                     if audio_size == 0 {
                         log::warn!("infer {text} got empty audio, skip!");
@@ -268,8 +286,10 @@ impl TTSEngine {
         &self,
         name: &str,
         text: &str,
+        sample_rate: Option<usize>,
         mut callback: F,
     ) -> anyhow::Result<()> {
+        let sample_rate = sample_rate.unwrap_or(32000);
         let _g = gpt_sovits_rs::tch::no_grad_guard();
 
         let speaker = self
@@ -278,7 +298,12 @@ impl TTSEngine {
             .ok_or_else(|| anyhow::anyhow!("speaker {} not found", name,))?;
 
         for text in gpt_sovits_rs::text::split_text(text, 100) {
-            let (text_phone, text_bert) = gpt_sovits_rs::text::get_phone_and_bert(&self.g2p, text)?;
+            let r = gpt_sovits_rs::text::get_phone_and_bert(&self.g2p, text);
+            if let Err(e) = &r {
+                log::warn!("get phone and bert for {text} failed: {}", e);
+                continue;
+            }
+            let (text_phone, text_bert) = r.unwrap();
             let text_bert = text_bert.internal_cast_half(false);
 
             let mut s = speaker.speaker.stream_infer(
@@ -293,7 +318,10 @@ impl TTSEngine {
                 text_bert,
                 15,
             )?;
-            while let Some(chunk) = s.next_chunk(30, &[25, 25, 50, 75])? {
+            while let Some(mut chunk) = s.next_chunk(30, &[25, 25, 50, 75])? {
+                if sample_rate != 32000 {
+                    chunk = speaker.speaker.ssl.resample(&chunk, 32000, sample_rate)?;
+                }
                 let audio_size = chunk.size1().unwrap() as usize;
                 if audio_size == 0 {
                     log::warn!("infer {text} got empty audio, skip!");
@@ -401,7 +429,7 @@ impl TTSService {
                 continue;
             }
             match tts_type {
-                TTSType::Full => match engine.infer(&req.speaker, &req.input) {
+                TTSType::Full => match engine.infer(&req.speaker, &req.input, req.sample_rate) {
                     Ok(audio) => {
                         if tx.send(audio).is_err() {
                             log::warn!("tts response channel closed, skip!");
@@ -412,19 +440,23 @@ impl TTSService {
                     }
                 },
                 TTSType::Batch => {
-                    if let Err(e) = engine.batch_infer(&req.speaker, &req.input, |audio| {
-                        tx.send(audio)
-                            .map_err(|_| anyhow::anyhow!("send audio to request_tx failed"))
-                    }) {
+                    if let Err(e) =
+                        engine.batch_infer(&req.speaker, &req.input, req.sample_rate, |audio| {
+                            tx.send(audio)
+                                .map_err(|_| anyhow::anyhow!("send audio to request_tx failed"))
+                        })
+                    {
                         log::error!("{req:?} tts error: {}", e);
                         continue;
                     }
                 }
                 TTSType::Stream => {
-                    if let Err(e) = engine.stream_infer(&req.speaker, &req.input, |audio| {
-                        tx.send(audio)
-                            .map_err(|_| anyhow::anyhow!("send audio to request_tx failed"))
-                    }) {
+                    if let Err(e) =
+                        engine.stream_infer(&req.speaker, &req.input, req.sample_rate, |audio| {
+                            tx.send(audio)
+                                .map_err(|_| anyhow::anyhow!("send audio to request_tx failed"))
+                        })
+                    {
                         log::error!("{req:?} tts error: {}", e);
                         continue;
                     }
@@ -440,6 +472,20 @@ pub async fn tts_service(
     req: axum::Json<TTSRequest>,
 ) -> impl IntoResponse {
     log::info!("tts request: {:?}", req);
+    match req.0.sample_rate {
+        None | Some(44000) | Some(32000) | Some(16000) | Some(8000) => {}
+        Some(rate) => {
+            return Response::builder()
+                .status(400)
+                .body(Body::from(format!(
+                    "Unsupported sample rate: {}, only 44000, 32000, 16000, 8000 are supported",
+                    rate
+                )))
+                .unwrap();
+        }
+    }
+
+    let sample_rate = req.0.sample_rate.unwrap_or(32000);
 
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
     let e = tts_service.tx.send((req.0, TTSType::Full, tx)).await;
@@ -452,7 +498,7 @@ pub async fn tts_service(
 
     match rx.recv().await {
         Some(s) => {
-            let header = wav_io::new_header(32000, 16, false, true);
+            let header = wav_io::new_header(sample_rate as u32, 16, false, true);
             let body = wav_io::write_to_bytes(&header, &s);
             match body {
                 Ok(body) => Response::builder()
@@ -479,6 +525,18 @@ pub async fn tts_batch_service(
     req: axum::Json<TTSRequest>,
 ) -> impl IntoResponse {
     log::info!("tts_batch_service request: {:?}", req);
+    match req.0.sample_rate {
+        None | Some(44000) | Some(32000) | Some(16000) | Some(8000) => {}
+        Some(rate) => {
+            return Response::builder()
+                .status(400)
+                .body(Body::from(format!(
+                    "Unsupported sample rate: {}, only 44000, 32000, 16000, 8000 are supported",
+                    rate
+                )))
+                .unwrap();
+        }
+    }
 
     let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
     let e = tts_service.tx.send((req.0, TTSType::Batch, tx)).await;
@@ -513,6 +571,18 @@ pub async fn tts_stream_service(
     req: axum::Json<TTSRequest>,
 ) -> impl IntoResponse {
     log::info!("tts stream request: {:?}", req);
+    match req.0.sample_rate {
+        None | Some(44000) | Some(32000) | Some(16000) | Some(8000) => {}
+        Some(rate) => {
+            return Response::builder()
+                .status(400)
+                .body(Body::from(format!(
+                    "Unsupported sample rate: {}, only 44000, 32000, 16000, 8000 are supported",
+                    rate
+                )))
+                .unwrap();
+        }
+    }
 
     let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
     let e = tts_service.tx.send((req.0, TTSType::Stream, tx)).await;

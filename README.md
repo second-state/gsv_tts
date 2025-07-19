@@ -18,7 +18,7 @@ export LIBTORCH=$(pwd)/libtorch
 ## Build the API server
 
 ```
-git clone https://github.com/L-jasmine/gsv_tts
+git clone https://github.com/second-state/gsv_tts
 git clone https://github.com/second-state/gpt_sovits_rs
 
 cd gsv_tts

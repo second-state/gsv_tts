@@ -1,229 +1,136 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dim">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GPT-Sovits TTS</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f7fa;
-            color: #333;
-        }
-
-        .container {
-            background-color: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-        }
-
-        h1 {
-            color: #2c3e50;
-            margin-bottom: 20px;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-        }
-
-        input,
-        select,
-        textarea {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-
-        button {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s;
-        }
-
-        button:hover {
-            background-color: #2980b9;
-        }
-
-        button:disabled {
-            background-color: #95a5a6;
-            cursor: not-allowed;
-        }
-
-        .audio-container {
-            margin-top: 20px;
-        }
-
-        .audio-controls {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .status-message {
-            margin-top: 10px;
-            padding: 10px;
-            border-radius: 4px;
-            display: none;
-        }
-
-        .success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .loading {
-            display: none;
-            margin-top: 10px;
-        }
-
-        .visible {
-            display: block;
-        }
-
-        .tab-container {
-            margin-bottom: 20px;
-        }
-
-        .tab-buttons {
-            display: flex;
-            border-bottom: 1px solid #ddd;
-            margin-bottom: 15px;
-        }
-
-        .tab-button {
-            padding: 10px 15px;
-            background-color: #f1f1f1;
-            border: none;
-            cursor: pointer;
-            border-radius: 4px 4px 0 0;
-            margin-right: 5px;
-        }
-
-        .tab-button.active {
-            background-color: #3498db;
-            color: white;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        .error-message {
-            color: #e74c3c;
-            font-size: 14px;
-            margin-top: 5px;
-            display: none;
-        }
-    </style>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@3.9.4/dist/full.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body>
-    <h1>GPT-Sovits TTS</h1>
+<body class="bg-base-200 min-h-screen">
+    <div class="container mx-auto max-w-4xl p-4">
+        <h1 class="text-3xl font-bold text-base-content mb-6">GPT-Sovits TTS</h1>
 
-    <div class="tab-container">
-        <div class="tab-buttons">
-            <button class="tab-button active" onclick="openTab(event, 'normal-tab')">Normal Speech Generation</button>
-            <button class="tab-button" onclick="openTab(event, 'batch-tab')">Batch Speech Generation</button>
-            <button class="tab-button" onclick="openTab(event, 'stream-tab')">Stream Speech Generation</button>
+        <div class="tabs tabs-boxed mb-6">
+            <a class="tab tab-active" onclick="openTab(event, 'normal-tab')" id="normal-tab-btn">Normal Speech
+                Generation</a>
+            <a class="tab" onclick="openTab(event, 'batch-tab')" id="batch-tab-btn">Batch Speech Generation</a>
+            <a class="tab" onclick="openTab(event, 'stream-tab')" id="stream-tab-btn">Stream Speech Generation</a>
         </div>
 
-        <div id="normal-tab" class="tab-content active">
-            <div class="container">
-                <div class="form-group">
-                    <label for="inputText">Input Text:</label>
-                    <textarea id="inputText" rows="4" placeholder="Enter text to convert to speech..."></textarea>
-                    <div id="textError" class="error-message"></div>
-                </div>
+        <div id="normal-tab" class="tab-content">
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <div class="form-control mb-4">
+                        <label class="label">
+                            <span class="label-text font-semibold">Input Text:</span>
+                        </label>
+                        <textarea id="inputText" class="textarea textarea-bordered min-h-24 resize-none"
+                            placeholder="Enter text to convert to speech..." rows="3"></textarea>
+                        <div id="textError" class="text-error text-sm mt-1 hidden"></div>
+                    </div>
 
-                <div class="form-group">
-                    <label for="speakerSelect">Select Voice Type:</label>
-                    <select id="speakerSelect"></select>
-                    <div id="speakerError" class="error-message"></div>
-                </div>
+                    <div class="form-control mb-4">
+                        <label class="label">
+                            <span class="label-text font-semibold">Select Voice Type:</span>
+                        </label>
+                        <select id="speakerSelect" class="select select-bordered w-full"></select>
+                        <div id="speakerError" class="text-error text-sm mt-1 hidden"></div>
+                    </div>
 
-                <button id="generateBtn">Generate Speech</button>
+                    <button id="generateBtn" class="btn btn-primary">Generate Speech</button>
 
-                <div id="loading" class="loading">Generating speech...</div>
-                <div id="statusMessage" class="status-message"></div>
+                    <div id="loading" class="hidden mt-4">
+                        <div class="flex items-center gap-2">
+                            <span class="loading loading-spinner"></span>
+                            <span>Generating speech...</span>
+                        </div>
+                    </div>
 
-                <div id="audioContainer" class="audio-container">
-                    <audio id="audioPlayer" controls></audio>
-                    <div class="audio-controls">
-                        <a id="downloadLink" href="#" download="speech.wav"></a>
+                    <div id="statusMessage" class="alert hidden mt-4"></div>
+
+                    <div id="audioContainer" class="hidden mt-6">
+                        <div class="card bg-base-200">
+                            <div class="card-body">
+                                <audio id="audioPlayer" controls class="w-full mb-4"></audio>
+                                <div class="card-actions">
+                                    <a id="downloadLink" href="#" download="speech.wav" class="btn btn-outline">Download
+                                        Speech</a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div id="batch-tab" class="tab-content">
-            <div class="container">
-                <div class="form-group">
-                    <label for="batchInputText">Input Text:</label>
-                    <textarea id="batchInputText" rows="4" placeholder="Enter text to convert to speech..."></textarea>
-                    <div id="batchTextError" class="error-message"></div>
+        <div id="batch-tab" class="tab-content hidden">
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <div class="form-control mb-4">
+                        <label class="label">
+                            <span class="label-text font-semibold">Input Text:</span>
+                        </label>
+                        <textarea id="batchInputText" class="textarea textarea-bordered min-h-24 resize-none"
+                            placeholder="Enter text to convert to speech..." rows="3"></textarea>
+                        <div id="batchTextError" class="text-error text-sm mt-1 hidden"></div>
+                    </div>
+
+                    <div class="form-control mb-4">
+                        <label class="label">
+                            <span class="label-text font-semibold">Select Voice Type:</span>
+                        </label>
+                        <select id="batchSpeakerSelect" class="select select-bordered w-full"></select>
+                        <div id="batchSpeakerError" class="text-error text-sm mt-1 hidden"></div>
+                    </div>
+
+                    <button id="batchGenerateBtn" class="btn btn-primary">Generate Speech</button>
+
+                    <div id="batchLoading" class="hidden mt-4">
+                        <div class="flex items-center gap-2">
+                            <span class="loading loading-spinner"></span>
+                            <span>Generating speech...</span>
+                        </div>
+                    </div>
+
+                    <div id="batchStatusMessage" class="alert hidden mt-4"></div>
                 </div>
-
-                <div class="form-group">
-                    <label for="batchSpeakerSelect">Select Voice Type:</label>
-                    <select id="batchSpeakerSelect"></select>
-                    <div id="batchSpeakerError" class="error-message"></div>
-                </div>
-
-                <button id="batchGenerateBtn">Generate Speech</button>
-
-                <div id="batchLoading" class="loading">Generating speech...</div>
-                <div id="batchStatusMessage" class="status-message"></div>
             </div>
         </div>
 
-        <div id="stream-tab" class="tab-content">
-            <div class="container">
-                <div class="form-group">
-                    <label for="streamInputText">Input Text:</label>
-                    <textarea id="streamInputText" rows="4" placeholder="Enter text to convert to speech..."></textarea>
-                    <div id="streamTextError" class="error-message"></div>
+        <div id="stream-tab" class="tab-content hidden">
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <div class="form-control mb-4">
+                        <label class="label">
+                            <span class="label-text font-semibold">Input Text:</span>
+                        </label>
+                        <textarea id="streamInputText" class="textarea textarea-bordered min-h-24 resize-none"
+                            placeholder="Enter text to convert to speech..." rows="3"></textarea>
+                        <div id="streamTextError" class="text-error text-sm mt-1 hidden"></div>
+                    </div>
+
+                    <div class="form-control mb-4">
+                        <label class="label">
+                            <span class="label-text font-semibold">Select Voice Type:</span>
+                        </label>
+                        <select id="streamSpeakerSelect" class="select select-bordered w-full"></select>
+                        <div id="streamSpeakerError" class="text-error text-sm mt-1 hidden"></div>
+                    </div>
+
+                    <button id="streamGenerateBtn" class="btn btn-primary">Generate Speech</button>
+
+                    <div id="streamLoading" class="hidden mt-4">
+                        <div class="flex items-center gap-2">
+                            <span class="loading loading-spinner"></span>
+                            <span>Generating speech...</span>
+                        </div>
+                    </div>
+
+                    <div id="streamStatusMessage" class="alert hidden mt-4"></div>
                 </div>
-
-                <div class="form-group">
-                    <label for="streamSpeakerSelect">Select Voice Type:</label>
-                    <select id="streamSpeakerSelect"></select>
-                    <div id="streamSpeakerError" class="error-message"></div>
-                </div>
-
-                <button id="streamGenerateBtn">Generate Speech</button>
-
-                <div id="streamLoading" class="loading">Generating speech...</div>
-                <div id="streamStatusMessage" class="status-message"></div>
             </div>
         </div>
     </div>
@@ -241,62 +148,68 @@
 
         // Open tab
         function openTab(evt, tabName) {
+            // Hide all tab contents
             const tabContents = document.getElementsByClassName('tab-content');
             for (let i = 0; i < tabContents.length; i++) {
-                tabContents[i].classList.remove('active');
+                tabContents[i].classList.add('hidden');
             }
-            const tabButtons = document.getElementsByClassName('tab-button');
-            for (let i = 0; i < tabButtons.length; i++) {
-                tabButtons[i].classList.remove('active');
-            }
-            document.getElementById(tabName).classList.add('active');
-            evt.currentTarget.classList.add('active');
+
+            // Remove active class from all tabs
+            const tabButtons = document.querySelectorAll('.tab');
+            tabButtons.forEach(tab => tab.classList.remove('tab-active'));
+
+            // Show selected tab content
+            document.getElementById(tabName).classList.remove('hidden');
+
+            // Add active class to clicked tab
+            evt.currentTarget.classList.add('tab-active');
         }
 
         // Show status message
         function showStatus(message, type) {
-            const statusElement = document.getElementById('statusMessage');
-            const batchStatusElement = document.getElementById('batchStatusMessage');
-            const streamStatusElement = document.getElementById('streamStatusMessage');
+            const statusElements = [
+                document.getElementById('statusMessage'),
+                document.getElementById('batchStatusMessage'),
+                document.getElementById('streamStatusMessage')
+            ];
 
-
-            if (statusElement) {
-                statusElement.textContent = message;
-                statusElement.className = 'status-message ' + type;
-                statusElement.classList.add('visible');
+            let alertClass = 'alert ';
+            switch (type) {
+                case 'success':
+                    alertClass += 'alert-success';
+                    break;
+                case 'error':
+                    alertClass += 'alert-error';
+                    break;
+                case 'info':
+                    alertClass += 'alert-info';
+                    break;
+                default:
+                    alertClass += 'alert-info';
             }
 
-            if (batchStatusElement) {
-                batchStatusElement.textContent = message;
-                batchStatusElement.className = 'status-message ' + type;
-                batchStatusElement.classList.add('visible');
-            }
-
-            if (streamStatusElement) {
-                streamStatusElement.textContent = message;
-                streamStatusElement.className = 'status-message ' + type;
-                streamStatusElement.classList.add('visible');
-            }
+            statusElements.forEach(element => {
+                if (element) {
+                    element.textContent = message;
+                    element.className = `${alertClass} mt-4`;
+                    element.classList.remove('hidden');
+                }
+            });
         }
 
         // Clear status message
         function clearStatus() {
-            const statusElement = document.getElementById('statusMessage');
-            const batchStatusElement = document.getElementById('batchStatusMessage');
-            const streamStatusElement = document.getElementById('streamStatusMessage');
+            const statusElements = [
+                document.getElementById('statusMessage'),
+                document.getElementById('batchStatusMessage'),
+                document.getElementById('streamStatusMessage')
+            ];
 
-
-            if (statusElement) {
-                statusElement.classList.remove('visible');
-            }
-
-            if (batchStatusElement) {
-                batchStatusElement.classList.remove('visible');
-            }
-
-            if (streamStatusElement) {
-                streamStatusElement.classList.remove('visible');
-            }
+            statusElements.forEach(element => {
+                if (element) {
+                    element.classList.add('hidden');
+                }
+            });
         }
 
         // Show error
@@ -304,7 +217,7 @@
             const errorElement = document.getElementById(elementId);
             if (errorElement) {
                 errorElement.textContent = message;
-                errorElement.style.display = 'block';
+                errorElement.classList.remove('hidden');
             }
         }
 
@@ -312,64 +225,54 @@
         function clearError(elementId) {
             const errorElement = document.getElementById(elementId);
             if (errorElement) {
-                errorElement.style.display = 'none';
+                errorElement.classList.add('hidden');
             }
         }
 
         // Load voice types
         async function loadSpeakers() {
             try {
+                // Try to fetch from API first
                 const response = await fetch(APIBASEURL + 'speakers');
                 if (!response.ok) {
-                    throw new Error('Unable to load voice types');
+                    throw new Error('API not available, using demo data');
                 }
                 const data = await response.json();
                 speakers = data.speakers || data;
-
-                // Fill normal speech generator
-                const speakerSelect = document.getElementById('speakerSelect');
-                if (speakerSelect) {
-                    speakerSelect.innerHTML = '';
-                    speakers.forEach(speaker => {
-                        const option = document.createElement('option');
-                        option.value = speaker;
-                        option.textContent = speaker;
-                        speakerSelect.appendChild(option);
-                    });
-                }
-
-                // Fill batch speech generator
-                const batchSpeakerSelect = document.getElementById('batchSpeakerSelect');
-                if (batchSpeakerSelect) {
-                    batchSpeakerSelect.innerHTML = '';
-                    speakers.forEach(speaker => {
-                        const option = document.createElement('option');
-                        option.value = speaker;
-                        option.textContent = speaker;
-                        batchSpeakerSelect.appendChild(option);
-                    });
-                }
-
-                // Fill stream speech generator
-                const streamSpeakerSelect = document.getElementById('streamSpeakerSelect');
-                if (streamSpeakerSelect) {
-                    streamSpeakerSelect.innerHTML = '';
-                    speakers.forEach(speaker => {
-                        const option = document.createElement('option');
-                        option.value = speaker;
-                        option.textContent = speaker;
-                        streamSpeakerSelect.appendChild(option);
-                    });
-                }
-
-                // Select first voice type
-                if (speakerSelect) speakerSelect.selectedIndex = 0;
-                if (batchSpeakerSelect) batchSpeakerSelect.selectedIndex = 0;
-                if (streamSpeakerSelect) streamSpeakerSelect.selectedIndex = 0;
             } catch (error) {
-                console.error('Failed to load voice types:', error);
-                showStatus('Failed to load voice types: ' + error.message, 'error');
+                console.warn('Using demo speakers data:', error.message);
+                // Use demo data when API is not available
+                speakers = [
+                    'Female Voice 1',
+                    'Female Voice 2',
+                    'Male Voice 1',
+                    'Male Voice 2',
+                    'Child Voice',
+                    'Elderly Voice',
+                    'Robot Voice',
+                    'Narrator Voice'
+                ];
+                showStatus('Demo mode: Using sample voice types', 'info');
             }
+
+            // Fill all speaker selects
+            const speakerSelects = [
+                document.getElementById('speakerSelect'),
+                document.getElementById('batchSpeakerSelect'),
+                document.getElementById('streamSpeakerSelect')
+            ];
+
+            speakerSelects.forEach(select => {
+                if (select) {
+                    select.innerHTML = '<option disabled selected>Choose a voice type</option>';
+                    speakers.forEach(speaker => {
+                        const option = document.createElement('option');
+                        option.value = speaker;
+                        option.textContent = speaker;
+                        select.appendChild(option);
+                    });
+                }
+            });
         }
 
         // Validate input
@@ -385,7 +288,7 @@
                 clearError(textErrorId);
             }
 
-            if (!speaker) {
+            if (!speaker || speaker === 'Choose a voice type') {
                 showError(speakerErrorId, 'Please select a voice type');
                 isValid = false;
             } else {
@@ -413,12 +316,12 @@
             console.time('generateSpeech');
             console.timeLog('generateSpeech', 'Starting speech generation');
 
-
             // Show loading state
-            loading.classList.add('visible');
+            loading.classList.remove('hidden');
             generateBtn.disabled = true;
+            generateBtn.classList.add('loading');
             clearStatus();
-            audioContainer.classList.remove('visible');
+            audioContainer.classList.add('hidden');
 
             try {
                 const response = await fetch(APIBASEURL + 'speech', {
@@ -450,10 +353,9 @@
                 // Set download link
                 downloadLink.href = audioUrl;
                 downloadLink.download = 'speech.wav';
-                downloadLink.textContent = 'Download Speech';
 
                 // Show audio container
-                audioContainer.classList.add('visible');
+                audioContainer.classList.remove('hidden');
 
                 // Show success message
                 showStatus('Speech generated successfully!', 'success');
@@ -462,8 +364,9 @@
                 showStatus('Failed to generate speech: ' + error.message, 'error');
             } finally {
                 // Hide loading state
-                loading.classList.remove('visible');
+                loading.classList.add('hidden');
                 generateBtn.disabled = false;
+                generateBtn.classList.remove('loading');
             }
         }
 
@@ -471,25 +374,22 @@
         async function generateBatchSpeech() {
             console.time('generateBatchSpeech');
             console.timeLog('generateBatchSpeech', 'Starting batch speech generation');
+
             // Get input values
             const text = document.getElementById('batchInputText').value.trim();
             const speakerId = document.getElementById('batchSpeakerSelect').value;
 
             // Validate input
-            if (!text) {
-                showError('batchTextError', 'Please enter text to convert');
-                return;
-            }
-
-            if (!speakerId) {
-                showError('batchSpeakerError', 'Please select a voice type');
+            if (!validateInput('batchInputText', 'batchSpeakerSelect', 'batchTextError', 'batchSpeakerError')) {
                 return;
             }
 
             // Show loading state
             const loading = document.getElementById('batchLoading');
-            loading.classList.add('visible');
-            document.getElementById('batchGenerateBtn').disabled = true;
+            const generateBtn = document.getElementById('batchGenerateBtn');
+            loading.classList.remove('hidden');
+            generateBtn.disabled = true;
+            generateBtn.classList.add('loading');
 
             try {
                 // Create request
@@ -508,13 +408,11 @@
                     throw new Error(`API request failed: ${response.status} ${response.statusText}`);
                 }
 
-
                 // Start receiving data
                 const reader = response.body.getReader();
                 let audioBuffer = [];
                 let totalBytes = 0;
                 let rest = undefined;
-                var p = undefined;
 
                 var player = new PCMPlayer({
                     inputCodec: 'Int16',
@@ -536,7 +434,6 @@
                         showStatus('Playing speech...', 'success');
                     }
 
-
                     totalBytes += value.length;
 
                     if (rest !== undefined) {
@@ -558,15 +455,14 @@
                     }
                 }
 
-
-
             } catch (error) {
                 console.error('Error generating speech:', error);
                 showError('batchTextError', `Error generating speech: ${error.message}`);
             } finally {
                 // Hide loading state
-                loading.classList.remove('visible');
-                document.getElementById('batchGenerateBtn').disabled = false;
+                loading.classList.add('hidden');
+                generateBtn.disabled = false;
+                generateBtn.classList.remove('loading');
             }
         }
 
@@ -574,25 +470,22 @@
         async function generateStreamSpeech() {
             console.time('generateStreamSpeech');
             console.timeLog('generateStreamSpeech', 'Starting stream speech generation');
+
             // Get input values
             const text = document.getElementById('streamInputText').value.trim();
             const speakerId = document.getElementById('streamSpeakerSelect').value;
 
             // Validate input
-            if (!text) {
-                showError('streamTextError', 'Please enter text to convert');
-                return;
-            }
-
-            if (!speakerId) {
-                showError('streamSpeakerError', 'Please select a voice type');
+            if (!validateInput('streamInputText', 'streamSpeakerSelect', 'streamTextError', 'streamSpeakerError')) {
                 return;
             }
 
             // Show loading state
             const loading = document.getElementById('streamLoading');
-            loading.classList.add('visible');
-            document.getElementById('streamGenerateBtn').disabled = true;
+            const generateBtn = document.getElementById('streamGenerateBtn');
+            loading.classList.remove('hidden');
+            generateBtn.disabled = true;
+            generateBtn.classList.add('loading');
 
             try {
                 // Create request
@@ -611,7 +504,6 @@
                     throw new Error(`API request failed: ${response.status} ${response.statusText}`);
                 }
 
-
                 // Start receiving data
                 const reader = response.body.getReader();
                 let totalBytes = 0;
@@ -625,13 +517,10 @@
                 });
                 player.volume(1.0);
 
-
-
                 // Process received data
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) {
-                        p = undefined;
                         rest = undefined;
                         break;
                     }
@@ -641,13 +530,7 @@
                         showStatus('Playing speech...', 'success');
                     }
 
-
                     totalBytes += value.length;
-
-                    let sampleArray = [];
-
-                    var data;
-                    var valueArray;
 
                     if (rest !== undefined) {
                         if (value.length % 2 !== 0) {
@@ -666,26 +549,53 @@
                             player.feed(value);
                         }
                     }
-
                 }
-
-
 
             } catch (error) {
                 console.error('Error generating speech:', error);
                 showError('streamTextError', `Error generating speech: ${error.message}`);
             } finally {
                 // Hide loading state
-                loading.classList.remove('visible');
-                document.getElementById('streamGenerateBtn').disabled = false;
+                loading.classList.add('hidden');
+                generateBtn.disabled = false;
+                generateBtn.classList.remove('loading');
             }
         }
-
 
         // Bind events
         document.getElementById('generateBtn').addEventListener('click', generateSpeech);
         document.getElementById('batchGenerateBtn').addEventListener('click', generateBatchSpeech);
         document.getElementById('streamGenerateBtn').addEventListener('click', generateStreamSpeech);
+
+        // Auto-resize textarea to fit content
+        function autoResizeTextarea(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+        }
+
+        // Initialize auto-resize for all textareas
+        function initAutoResize() {
+            const textareas = [
+                document.getElementById('inputText'),
+                document.getElementById('batchInputText'),
+                document.getElementById('streamInputText')
+            ];
+
+            textareas.forEach(textarea => {
+                if (textarea) {
+                    // Add event listener for input
+                    textarea.addEventListener('input', () => autoResizeTextarea(textarea));
+
+                    // Add event listener for paste
+                    textarea.addEventListener('paste', () => {
+                        setTimeout(() => autoResizeTextarea(textarea), 0);
+                    });
+
+                    // Initial resize
+                    autoResizeTextarea(textarea);
+                }
+            });
+        }
 
         // Clear errors on input
         document.getElementById('inputText').addEventListener('input', () => clearError('textError'));
@@ -695,7 +605,8 @@
         document.getElementById('streamInputText').addEventListener('input', () => clearError('streamTextError'));
         document.getElementById('streamSpeakerSelect').addEventListener('change', () => clearError('streamSpeakerError'));
 
-        // Initially load voice types
+        // Initialize auto-resize and load voice types
+        initAutoResize();
         loadSpeakers();
     </script>
 </body>

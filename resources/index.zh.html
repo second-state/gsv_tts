@@ -1,229 +1,134 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="dim">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GPT-Sovits TTS</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f7fa;
-            color: #333;
-        }
-
-        .container {
-            background-color: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-        }
-
-        h1 {
-            color: #2c3e50;
-            margin-bottom: 20px;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-        }
-
-        input,
-        select,
-        textarea {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-
-        button {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s;
-        }
-
-        button:hover {
-            background-color: #2980b9;
-        }
-
-        button:disabled {
-            background-color: #95a5a6;
-            cursor: not-allowed;
-        }
-
-        .audio-container {
-            margin-top: 20px;
-        }
-
-        .audio-controls {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .status-message {
-            margin-top: 10px;
-            padding: 10px;
-            border-radius: 4px;
-            display: none;
-        }
-
-        .success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .loading {
-            display: none;
-            margin-top: 10px;
-        }
-
-        .visible {
-            display: block;
-        }
-
-        .tab-container {
-            margin-bottom: 20px;
-        }
-
-        .tab-buttons {
-            display: flex;
-            border-bottom: 1px solid #ddd;
-            margin-bottom: 15px;
-        }
-
-        .tab-button {
-            padding: 10px 15px;
-            background-color: #f1f1f1;
-            border: none;
-            cursor: pointer;
-            border-radius: 4px 4px 0 0;
-            margin-right: 5px;
-        }
-
-        .tab-button.active {
-            background-color: #3498db;
-            color: white;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        .error-message {
-            color: #e74c3c;
-            font-size: 14px;
-            margin-top: 5px;
-            display: none;
-        }
-    </style>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@3.9.4/dist/full.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body>
-    <h1>GPT-Sovits TTS</h1>
+<body class="bg-base-200 min-h-screen">
+    <div class="container mx-auto max-w-4xl p-4">
+        <h1 class="text-3xl font-bold text-base-content mb-6">GPT-Sovits TTS</h1>
 
-    <div class="tab-container">
-        <div class="tab-buttons">
-            <button class="tab-button active" onclick="openTab(event, 'normal-tab')">普通语音生成</button>
-            <button class="tab-button" onclick="openTab(event, 'batch-tab')">批量语音生成</button>
-            <button class="tab-button" onclick="openTab(event, 'stream-tab')">流式语音生成</button>
+        <div class="tabs tabs-boxed mb-6">
+            <a class="tab tab-active" onclick="openTab(event, 'normal-tab')" id="normal-tab-btn">普通语音生成</a>
+            <a class="tab" onclick="openTab(event, 'batch-tab')" id="batch-tab-btn">批量语音生成</a>
+            <a class="tab" onclick="openTab(event, 'stream-tab')" id="stream-tab-btn">流式语音生成</a>
         </div>
 
-        <div id="normal-tab" class="tab-content active">
-            <div class="container">
-                <div class="form-group">
-                    <label for="inputText">输入文本:</label>
-                    <textarea id="inputText" rows="4" placeholder="请输入要转换为语音的文本..."></textarea>
-                    <div id="textError" class="error-message"></div>
-                </div>
+        <div id="normal-tab" class="tab-content">
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <div class="form-control mb-4">
+                        <label class="label">
+                            <span class="label-text font-semibold">输入文本:</span>
+                        </label>
+                        <textarea id="inputText" class="textarea textarea-bordered min-h-24 resize-none"
+                            placeholder="请输入要转换为语音的文本..." rows="3"></textarea>
+                        <div id="textError" class="text-error text-sm mt-1 hidden"></div>
+                    </div>
 
-                <div class="form-group">
-                    <label for="speakerSelect">选择声音类型:</label>
-                    <select id="speakerSelect"></select>
-                    <div id="speakerError" class="error-message"></div>
-                </div>
+                    <div class="form-control mb-4">
+                        <label class="label">
+                            <span class="label-text font-semibold">选择声音类型:</span>
+                        </label>
+                        <select id="speakerSelect" class="select select-bordered w-full"></select>
+                        <div id="speakerError" class="text-error text-sm mt-1 hidden"></div>
+                    </div>
 
-                <button id="generateBtn">生成语音</button>
+                    <button id="generateBtn" class="btn btn-primary">生成语音</button>
 
-                <div id="loading" class="loading">正在生成语音...</div>
-                <div id="statusMessage" class="status-message"></div>
+                    <div id="loading" class="hidden mt-4">
+                        <div class="flex items-center gap-2">
+                            <span class="loading loading-spinner"></span>
+                            <span>正在生成语音...</span>
+                        </div>
+                    </div>
 
-                <div id="audioContainer" class="audio-container">
-                    <audio id="audioPlayer" controls></audio>
-                    <div class="audio-controls">
-                        <a id="downloadLink" href="#" download="speech.wav"></a>
+                    <div id="statusMessage" class="alert hidden mt-4"></div>
+
+                    <div id="audioContainer" class="hidden mt-6">
+                        <div class="card bg-base-200">
+                            <div class="card-body">
+                                <audio id="audioPlayer" controls class="w-full mb-4"></audio>
+                                <div class="card-actions">
+                                    <a id="downloadLink" href="#" download="speech.wav" class="btn btn-outline">下载语音</a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div id="batch-tab" class="tab-content">
-            <div class="container">
-                <div class="form-group">
-                    <label for="batchInputText">输入文本:</label>
-                    <textarea id="batchInputText" rows="4" placeholder="请输入要转换为语音的文本..."></textarea>
-                    <div id="batchTextError" class="error-message"></div>
+        <div id="batch-tab" class="tab-content hidden">
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <div class="form-control mb-4">
+                        <label class="label">
+                            <span class="label-text font-semibold">输入文本:</span>
+                        </label>
+                        <textarea id="batchInputText" class="textarea textarea-bordered min-h-24 resize-none"
+                            placeholder="请输入要转换为语音的文本..." rows="3"></textarea>
+                        <div id="batchTextError" class="text-error text-sm mt-1 hidden"></div>
+                    </div>
+
+                    <div class="form-control mb-4">
+                        <label class="label">
+                            <span class="label-text font-semibold">选择声音类型:</span>
+                        </label>
+                        <select id="batchSpeakerSelect" class="select select-bordered w-full"></select>
+                        <div id="batchSpeakerError" class="text-error text-sm mt-1 hidden"></div>
+                    </div>
+
+                    <button id="batchGenerateBtn" class="btn btn-primary">生成语音</button>
+
+                    <div id="batchLoading" class="hidden mt-4">
+                        <div class="flex items-center gap-2">
+                            <span class="loading loading-spinner"></span>
+                            <span>正在生成语音...</span>
+                        </div>
+                    </div>
+
+                    <div id="batchStatusMessage" class="alert hidden mt-4"></div>
                 </div>
-
-                <div class="form-group">
-                    <label for="batchSpeakerSelect">选择声音类型:</label>
-                    <select id="batchSpeakerSelect"></select>
-                    <div id="batchSpeakerError" class="error-message"></div>
-                </div>
-
-                <button id="batchGenerateBtn">生成语音</button>
-
-                <div id="batchLoading" class="loading">正在生成语音...</div>
-                <div id="batchStatusMessage" class="status-message"></div>
             </div>
         </div>
 
-        <div id="stream-tab" class="tab-content">
-            <div class="container">
-                <div class="form-group">
-                    <label for="streamInputText">输入文本:</label>
-                    <textarea id="streamInputText" rows="4" placeholder="请输入要转换为语音的文本..."></textarea>
-                    <div id="streamTextError" class="error-message"></div>
+        <div id="stream-tab" class="tab-content hidden">
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <div class="form-control mb-4">
+                        <label class="label">
+                            <span class="label-text font-semibold">输入文本:</span>
+                        </label>
+                        <textarea id="streamInputText" class="textarea textarea-bordered min-h-24 resize-none"
+                            placeholder="请输入要转换为语音的文本..." rows="3"></textarea>
+                        <div id="streamTextError" class="text-error text-sm mt-1 hidden"></div>
+                    </div>
+
+                    <div class="form-control mb-4">
+                        <label class="label">
+                            <span class="label-text font-semibold">选择声音类型:</span>
+                        </label>
+                        <select id="streamSpeakerSelect" class="select select-bordered w-full"></select>
+                        <div id="streamSpeakerError" class="text-error text-sm mt-1 hidden"></div>
+                    </div>
+
+                    <button id="streamGenerateBtn" class="btn btn-primary">生成语音</button>
+
+                    <div id="streamLoading" class="hidden mt-4">
+                        <div class="flex items-center gap-2">
+                            <span class="loading loading-spinner"></span>
+                            <span>正在生成语音...</span>
+                        </div>
+                    </div>
+
+                    <div id="streamStatusMessage" class="alert hidden mt-4"></div>
                 </div>
-
-                <div class="form-group">
-                    <label for="streamSpeakerSelect">选择声音类型:</label>
-                    <select id="streamSpeakerSelect"></select>
-                    <div id="streamSpeakerError" class="error-message"></div>
-                </div>
-
-                <button id="streamGenerateBtn">生成语音</button>
-
-                <div id="streamLoading" class="loading">正在生成语音...</div>
-                <div id="streamStatusMessage" class="status-message"></div>
             </div>
         </div>
     </div>
@@ -241,62 +146,68 @@
 
         // 打开标签页
         function openTab(evt, tabName) {
+            // 隐藏所有标签页内容
             const tabContents = document.getElementsByClassName('tab-content');
             for (let i = 0; i < tabContents.length; i++) {
-                tabContents[i].classList.remove('active');
+                tabContents[i].classList.add('hidden');
             }
-            const tabButtons = document.getElementsByClassName('tab-button');
-            for (let i = 0; i < tabButtons.length; i++) {
-                tabButtons[i].classList.remove('active');
-            }
-            document.getElementById(tabName).classList.add('active');
-            evt.currentTarget.classList.add('active');
+
+            // 移除所有标签页的激活状态
+            const tabButtons = document.querySelectorAll('.tab');
+            tabButtons.forEach(tab => tab.classList.remove('tab-active'));
+
+            // 显示选中的标签页内容
+            document.getElementById(tabName).classList.remove('hidden');
+
+            // 为点击的标签页添加激活状态
+            evt.currentTarget.classList.add('tab-active');
         }
 
         // 显示状态消息
         function showStatus(message, type) {
-            const statusElement = document.getElementById('statusMessage');
-            const batchStatusElement = document.getElementById('batchStatusMessage');
-            const streamStatusElement = document.getElementById('streamStatusMessage');
+            const statusElements = [
+                document.getElementById('statusMessage'),
+                document.getElementById('batchStatusMessage'),
+                document.getElementById('streamStatusMessage')
+            ];
 
-
-            if (statusElement) {
-                statusElement.textContent = message;
-                statusElement.className = 'status-message ' + type;
-                statusElement.classList.add('visible');
+            let alertClass = 'alert ';
+            switch (type) {
+                case 'success':
+                    alertClass += 'alert-success';
+                    break;
+                case 'error':
+                    alertClass += 'alert-error';
+                    break;
+                case 'info':
+                    alertClass += 'alert-info';
+                    break;
+                default:
+                    alertClass += 'alert-info';
             }
 
-            if (batchStatusElement) {
-                batchStatusElement.textContent = message;
-                batchStatusElement.className = 'status-message ' + type;
-                batchStatusElement.classList.add('visible');
-            }
-
-            if (streamStatusElement) {
-                streamStatusElement.textContent = message;
-                streamStatusElement.className = 'status-message ' + type;
-                streamStatusElement.classList.add('visible');
-            }
+            statusElements.forEach(element => {
+                if (element) {
+                    element.textContent = message;
+                    element.className = `${alertClass} mt-4`;
+                    element.classList.remove('hidden');
+                }
+            });
         }
 
         // 清除状态消息
         function clearStatus() {
-            const statusElement = document.getElementById('statusMessage');
-            const batchStatusElement = document.getElementById('batchStatusMessage');
-            const streamStatusElement = document.getElementById('streamStatusMessage');
+            const statusElements = [
+                document.getElementById('statusMessage'),
+                document.getElementById('batchStatusMessage'),
+                document.getElementById('streamStatusMessage')
+            ];
 
-
-            if (statusElement) {
-                statusElement.classList.remove('visible');
-            }
-
-            if (batchStatusElement) {
-                batchStatusElement.classList.remove('visible');
-            }
-
-            if (streamStatusElement) {
-                streamStatusElement.classList.remove('visible');
-            }
+            statusElements.forEach(element => {
+                if (element) {
+                    element.classList.add('hidden');
+                }
+            });
         }
 
         // 显示错误
@@ -304,7 +215,7 @@
             const errorElement = document.getElementById(elementId);
             if (errorElement) {
                 errorElement.textContent = message;
-                errorElement.style.display = 'block';
+                errorElement.classList.remove('hidden');
             }
         }
 
@@ -312,64 +223,84 @@
         function clearError(elementId) {
             const errorElement = document.getElementById(elementId);
             if (errorElement) {
-                errorElement.style.display = 'none';
+                errorElement.classList.add('hidden');
             }
+        }
+
+        // 自动调整文本框高度
+        function autoResizeTextarea(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+        }
+
+        // 初始化自动调整文本框高度功能
+        function initAutoResize() {
+            const textareas = [
+                document.getElementById('inputText'),
+                document.getElementById('batchInputText'),
+                document.getElementById('streamInputText')
+            ];
+
+            textareas.forEach(textarea => {
+                if (textarea) {
+                    // 添加输入事件监听器
+                    textarea.addEventListener('input', () => autoResizeTextarea(textarea));
+
+                    // 添加粘贴事件监听器
+                    textarea.addEventListener('paste', () => {
+                        setTimeout(() => autoResizeTextarea(textarea), 0);
+                    });
+
+                    // 初始调整
+                    autoResizeTextarea(textarea);
+                }
+            });
         }
 
         // 加载声音类型
         async function loadSpeakers() {
             try {
+                // 先尝试从API获取
                 const response = await fetch(APIBASEURL + 'speakers');
                 if (!response.ok) {
-                    throw new Error('无法加载声音类型');
+                    throw new Error('API不可用，使用演示数据');
                 }
                 const data = await response.json();
                 speakers = data.speakers || data;
-
-                // 填充普通语音生成器
-                const speakerSelect = document.getElementById('speakerSelect');
-                if (speakerSelect) {
-                    speakerSelect.innerHTML = '';
-                    speakers.forEach(speaker => {
-                        const option = document.createElement('option');
-                        option.value = speaker;
-                        option.textContent = speaker;
-                        speakerSelect.appendChild(option);
-                    });
-                }
-
-                // 填充批量语音生成器
-                const batchSpeakerSelect = document.getElementById('batchSpeakerSelect');
-                if (batchSpeakerSelect) {
-                    batchSpeakerSelect.innerHTML = '';
-                    speakers.forEach(speaker => {
-                        const option = document.createElement('option');
-                        option.value = speaker;
-                        option.textContent = speaker;
-                        batchSpeakerSelect.appendChild(option);
-                    });
-                }
-
-                // 填充流式语音生成器
-                const streamSpeakerSelect = document.getElementById('streamSpeakerSelect');
-                if (streamSpeakerSelect) {
-                    streamSpeakerSelect.innerHTML = '';
-                    speakers.forEach(speaker => {
-                        const option = document.createElement('option');
-                        option.value = speaker;
-                        option.textContent = speaker;
-                        streamSpeakerSelect.appendChild(option);
-                    });
-                }
-
-                // 选择第一个声音类型
-                if (speakerSelect) speakerSelect.selectedIndex = 0;
-                if (batchSpeakerSelect) batchSpeakerSelect.selectedIndex = 0;
-                if (streamSpeakerSelect) streamSpeakerSelect.selectedIndex = 0;
             } catch (error) {
-                console.error('加载声音类型失败:', error);
-                showStatus('加载声音类型失败: ' + error.message, 'error');
+                console.warn('使用演示声音数据:', error.message);
+                // 当API不可用时使用演示数据
+                speakers = [
+                    '女声1号',
+                    '女声2号',
+                    '男声1号',
+                    '男声2号',
+                    '童声',
+                    '老人声',
+                    '机器人声',
+                    '旁白声'
+                ];
+                showStatus('演示模式：使用示例声音类型', 'info');
             }
+
+            // 填充所有声音选择器
+            const speakerSelects = [
+                document.getElementById('speakerSelect'),
+                document.getElementById('batchSpeakerSelect'),
+                document.getElementById('streamSpeakerSelect')
+            ];
+
+            speakerSelects.forEach(select => {
+                if (select) {
+                    select.innerHTML = '<option disabled selected>选择声音类型</option>';
+                    speakers.forEach(speaker => {
+                        const option = document.createElement('option');
+                        option.value = speaker;
+                        option.textContent = speaker;
+                        select.appendChild(option);
+                    });
+                }
+            });
         }
 
         // 验证输入
@@ -385,7 +316,7 @@
                 clearError(textErrorId);
             }
 
-            if (!speaker) {
+            if (!speaker || speaker === '选择声音类型') {
                 showError(speakerErrorId, '请选择声音类型');
                 isValid = false;
             } else {
@@ -413,12 +344,12 @@
             console.time('generateSpeech');
             console.timeLog('generateSpeech', '开始生成语音');
 
-
             // 显示加载状态
-            loading.classList.add('visible');
+            loading.classList.remove('hidden');
             generateBtn.disabled = true;
+            generateBtn.classList.add('loading');
             clearStatus();
-            audioContainer.classList.remove('visible');
+            audioContainer.classList.add('hidden');
 
             try {
                 const response = await fetch(APIBASEURL + 'speech', {
@@ -452,7 +383,7 @@
                 downloadLink.download = 'speech.wav';
 
                 // 显示音频容器
-                audioContainer.classList.add('visible');
+                audioContainer.classList.remove('hidden');
 
                 // 显示成功消息
                 showStatus('语音生成成功！', 'success');
@@ -461,8 +392,9 @@
                 showStatus('生成语音失败: ' + error.message, 'error');
             } finally {
                 // 隐藏加载状态
-                loading.classList.remove('visible');
+                loading.classList.add('hidden');
                 generateBtn.disabled = false;
+                generateBtn.classList.remove('loading');
             }
         }
 
@@ -470,31 +402,22 @@
         async function generateBatchSpeech() {
             console.time('generateBatchSpeech');
             console.timeLog('generateBatchSpeech', '开始生成批量语音');
+
             // 获取输入值
             const text = document.getElementById('batchInputText').value.trim();
             const speakerId = document.getElementById('batchSpeakerSelect').value;
 
             // 验证输入
-            if (!text) {
-                showError('batchTextError', '请输入要转换的文本');
-                return;
-            }
-
-            if (!speakerId) {
-                showError('batchSpeakerError', '请选择声音类型');
+            if (!validateInput('batchInputText', 'batchSpeakerSelect', 'batchTextError', 'batchSpeakerError')) {
                 return;
             }
 
             // 显示加载状态
             const loading = document.getElementById('batchLoading');
-            loading.classList.add('visible');
-            document.getElementById('batchGenerateBtn').disabled = true;
-
-            // 创建音频上下文
-            // const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            // let sourceNode = null;
-
-
+            const generateBtn = document.getElementById('batchGenerateBtn');
+            loading.classList.remove('hidden');
+            generateBtn.disabled = true;
+            generateBtn.classList.add('loading');
 
             try {
                 // 创建请求
@@ -513,13 +436,11 @@
                     throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
                 }
 
-
                 // 开始接收数据
                 const reader = response.body.getReader();
                 let audioBuffer = [];
                 let totalBytes = 0;
                 let rest = undefined;
-                var p = undefined;
 
                 var player = new PCMPlayer({
                     inputCodec: 'Int16',
@@ -538,8 +459,8 @@
                     if (totalBytes === 0) {
                         console.timeLog('generateBatchSpeech', '接收到第一批数据');
                         console.timeEnd('generateBatchSpeech');
+                        showStatus('正在播放语音...', 'success');
                     }
-
 
                     totalBytes += value.length;
 
@@ -562,15 +483,14 @@
                     }
                 }
 
-
-
             } catch (error) {
                 console.error('生成语音时出错:', error);
                 showError('batchTextError', `生成语音时出错: ${error.message}`);
             } finally {
                 // 隐藏加载状态
-                loading.classList.remove('visible');
-                document.getElementById('batchGenerateBtn').disabled = false;
+                loading.classList.add('hidden');
+                generateBtn.disabled = false;
+                generateBtn.classList.remove('loading');
             }
         }
 
@@ -578,31 +498,22 @@
         async function generateStreamSpeech() {
             console.time('generateStreamSpeech');
             console.timeLog('generateStreamSpeech', '开始生成流式语音');
+
             // 获取输入值
             const text = document.getElementById('streamInputText').value.trim();
             const speakerId = document.getElementById('streamSpeakerSelect').value;
 
             // 验证输入
-            if (!text) {
-                showError('streamTextError', '请输入要转换的文本');
-                return;
-            }
-
-            if (!speakerId) {
-                showError('streamSpeakerError', '请选择声音类型');
+            if (!validateInput('streamInputText', 'streamSpeakerSelect', 'streamTextError', 'streamSpeakerError')) {
                 return;
             }
 
             // 显示加载状态
             const loading = document.getElementById('streamLoading');
-            loading.classList.add('visible');
-            document.getElementById('streamGenerateBtn').disabled = true;
-
-            // 创建音频上下文
-            // const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            // let sourceNode = null;
-
-
+            const generateBtn = document.getElementById('streamGenerateBtn');
+            loading.classList.remove('hidden');
+            generateBtn.disabled = true;
+            generateBtn.classList.add('loading');
 
             try {
                 // 创建请求
@@ -621,7 +532,6 @@
                     throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
                 }
 
-
                 // 开始接收数据
                 const reader = response.body.getReader();
                 let totalBytes = 0;
@@ -635,28 +545,20 @@
                 });
                 player.volume(1.0);
 
-
-
                 // 处理接收到的数据
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) {
-                        p = undefined;
                         rest = undefined;
                         break;
                     }
                     if (totalBytes === 0) {
                         console.timeLog('generateStreamSpeech', '接收到第一批数据');
                         console.timeEnd('generateStreamSpeech');
+                        showStatus('正在播放语音...', 'success');
                     }
 
-
                     totalBytes += value.length;
-
-                    let sampleArray = [];
-
-                    var data;
-                    var valueArray;
 
                     if (rest !== undefined) {
                         if (value.length % 2 !== 0) {
@@ -675,21 +577,18 @@
                             player.feed(value);
                         }
                     }
-
                 }
-
-
 
             } catch (error) {
                 console.error('生成语音时出错:', error);
                 showError('streamTextError', `生成语音时出错: ${error.message}`);
             } finally {
                 // 隐藏加载状态
-                loading.classList.remove('visible');
-                document.getElementById('streamGenerateBtn').disabled = false;
+                loading.classList.add('hidden');
+                generateBtn.disabled = false;
+                generateBtn.classList.remove('loading');
             }
         }
-
 
         // 绑定事件
         document.getElementById('generateBtn').addEventListener('click', generateSpeech);
@@ -704,7 +603,8 @@
         document.getElementById('streamInputText').addEventListener('input', () => clearError('streamTextError'));
         document.getElementById('streamSpeakerSelect').addEventListener('change', () => clearError('streamSpeakerError'));
 
-        // 初始加载声音类型
+        // 初始化自动调整文本框高度和加载声音类型
+        initAutoResize();
         loadSpeakers();
     </script>
 </body>

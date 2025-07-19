@@ -1,0 +1,1882 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Processor</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@3.9.4/dist/full.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/wavesurfer.js@7"></script>
+    <script src="https://unpkg.com/wavesurfer.js@7/dist/plugins/regions.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/ort.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.22/dist/bundle.min.js"></script>
+</head>
+
+<body class="bg-base-200 min-h-screen">
+    <div class="container mx-auto p-4">
+        <!-- Title -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-primary mb-2">Audio Processor</h1>
+            <p class="text-base-content/70">Upload audio files, view waveforms, play and cut segments</p>
+        </div>
+
+        <!-- Whisper Settings Area -->
+        <div class="card bg-base-100 shadow-xl mb-6">
+            <div class="card-body">
+                <h2 class="card-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Whisper Settings
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Whisper API URL</span>
+                        </label>
+                        <input type="url" id="whisperUrl"
+                            placeholder="https://whisper.gaia.domains/v1/audio/transcriptions"
+                            value="https://whisper.gaia.domains/v1/audio/transcriptions"
+                            class="input input-bordered w-full" />
+                        <label class="label">
+                            <span class="label-text-alt">Enter the complete Whisper API URL</span>
+                        </label>
+                    </div>
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">API Token</span>
+                        </label>
+                        <input type="password" id="whisperToken" placeholder="gaia-..."
+                            class="input input-bordered w-full" />
+                        <label class="label">
+                            <span class="label-text-alt">Enter API access token</span>
+                        </label>
+                    </div>
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Recognition Language</span>
+                        </label>
+                        <select id="whisperLanguage" class="select select-bordered w-full">
+                            <option value="auto" selected>Auto Detect</option>
+                            <option value="zh">Chinese</option>
+                            <option value="en">English</option>
+                        </select>
+                        <label class="label">
+                            <span class="label-text-alt">Select audio language type</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="flex justify-end mt-4">
+                    <button id="saveWhisperSettings" class="btn btn-primary btn-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        Save Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- File Upload Area -->
+        <div class="card bg-base-100 shadow-xl mb-6">
+            <div class="card-body">
+                <h2 class="card-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    Upload Audio File
+                </h2>
+                <div class="form-control">
+                    <input type="file" id="fileInput" accept=".mp3,.wav,.mp4"
+                        class="file-input file-input-bordered file-input-primary w-full" />
+                    <label class="label">
+                        <span class="label-text-alt">Supports MP3, WAV, MP4 formats</span>
+                    </label>
+                </div>
+                <div id="uploadProgress" class="hidden">
+                    <div class="flex items-center gap-3 mt-4">
+                        <span class="loading loading-spinner loading-sm"></span>
+                        <span id="progressText">Processing...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Audio Information -->
+        <div id="audioInfo" class="card bg-base-100 shadow-xl mb-6 hidden">
+            <div class="card-body">
+                <h2 class="card-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Audio Information
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="stat">
+                        <div class="stat-title">Filename</div>
+                        <div class="stat-value text-sm" id="fileName">-</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-title">Duration</div>
+                        <div class="stat-value text-lg" id="duration">-</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-title">Size</div>
+                        <div class="stat-value text-lg" id="fileSize">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Waveform Display and Audio Controls -->
+        <div id="waveformContainer" class="card bg-base-100 shadow-xl mb-6 hidden">
+            <div class="card-body">
+                <h2 class="card-title mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                    </svg>
+                    Audio Waveform & Cutting
+                </h2>
+
+                <!-- Region Operation Instructions -->
+                <div class="bg-info/10 border border-info/20 rounded-lg p-3 mb-4">
+                    <div class="flex items-start gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-info flex-shrink-0 mt-0.5"
+                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div class="text-sm">
+                            <div class="font-medium text-info mb-1">Instructions:</div>
+                            <ul class="text-base-content/70 space-y-1">
+                                <li>• <strong>Double-click waveform</strong> to add new selection region</li>
+                                <li>• <strong>Smart Cut</strong> uses VAD to automatically detect speech segments</li>
+                                <li>• <strong>Drag region edges</strong> to adjust selection range</li>
+                                <li>• <strong>Drag region center</strong> to move entire region</li>
+                                <li>• <strong>Right-click region</strong> to delete</li>
+                                <li>• <strong>Click region</strong> to select, use locate button to jump to segment
+                                    below</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Waveform Display Area -->
+                <div class="relative">
+                    <div id="waveform" class="w-full h-32 bg-base-200 rounded-lg border-2 border-base-300"></div>
+                </div>
+
+                <!-- Playback Controls -->
+                <div class="flex items-center gap-4 mb-4 mt-4">
+                    <!-- Play/Pause Button -->
+                    <button id="playPauseBtn" class="btn btn-primary btn-sm">
+                        <svg id="playIcon" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.586a1 1 0 01.707.293l4.828 4.828a4 4 0 105.656-5.656l-4.828-4.828A1 1 0 0116.586 4H15m-6 6v6m6-6v6m-6-6H9" />
+                        </svg>
+                        <svg id="pauseIcon" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 hidden" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span id="playPauseText">Play</span>
+                    </button>
+
+                    <button id="stopBtn" class="btn btn-accent btn-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Stop
+                    </button>
+
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm">Volume:</span>
+                        <input type="range" id="volumeSlider" min="0" max="100" value="50"
+                            class="range range-primary range-sm w-24" />
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <span id="currentTime" class="text-sm text-base-content/70">00:00</span>
+                        <span class="text-sm text-base-content/70">/</span>
+                        <span id="totalTime" class="text-sm text-base-content/70">00:00</span>
+                    </div>
+
+                    <div class="flex-1"></div>
+
+                    <!-- Region Management Buttons -->
+                    <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-1">
+                            <label class="text-xs text-base-content/70">Tolerance:</label>
+                            <input type="number" id="redemptionFrames" value="3" min="1" max="20"
+                                class="input input-bordered input-xs w-14 text-center"
+                                title="VAD silence tolerance frames, higher values tolerate longer silence" />
+                        </div>
+                        <button id="autoVadBtn" class="btn btn-info btn-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                            </svg>
+                            Smart Cut
+                        </button>
+                        <button id="addRegionBtn" class="btn btn-outline btn-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                            Add Region
+                        </button>
+                        <button id="clearRegionsBtn" class="btn btn-outline btn-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            Clear Regions
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Selected Region Information -->
+                <div id="regionInfo" class="hidden bg-base-200 p-3 rounded-lg mb-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="flex gap-2">
+                                <button id="playRegionBtn" class="btn btn-xs btn-primary">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.586a1 1 0 01.707.293l4.828 4.828a4 4 0 105.656-5.656l-4.828-4.828A1 1 0 0116.586 4H15m-6 6v6m6-6v6m-6-6H9" />
+                                    </svg>
+                                    Play
+                                </button>
+                                <button id="locateRegionBtn" class="btn btn-xs btn-accent">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 13l-7 7-7-7m14-8l-7 7-7-7" />
+                                    </svg>
+                                    Locate Segment
+                                </button>
+                            </div>
+                            <div class="text-sm">
+                                <span class="font-medium">Selected Region:</span>
+                                <span id="regionTimeInfo" class="ml-2 text-base-content/70">No Selection</span>
+                            </div>
+                        </div>
+                        <button id="deleteRegionBtn" class="btn btn-xs btn-error">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cut Results Management -->
+        <div id="cutResultsManager" class="card bg-base-100 shadow-xl hidden">
+            <div class="card-body">
+                <h2 class="card-title mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                    Cut Results Management
+                    <div class="badge badge-primary ml-2" id="segmentCount">0</div>
+                </h2>
+
+                <div class="flex justify-between items-center mb-4">
+                    <div class="text-sm text-base-content/70">
+                        Cut <span id="totalSegments">0</span> segments
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="transcribeAllBtn" class="btn btn-info btn-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                            </svg>
+                            Transcribe All
+                        </button>
+                        <button id="copyAllTranscriptionBtn" class="btn btn-secondary btn-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                            Copy All
+                        </button>
+                        <button id="downloadAllBtn" class="btn btn-primary btn-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            Download All
+                        </button>
+                        <button id="clearAllBtn" class="btn btn-outline btn-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            Clear All
+                        </button>
+                    </div>
+                </div>
+
+                <div id="segmentsList" class="space-y-4">
+                    <!-- Cut segments will be dynamically added here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let wavesurfer;
+        let regionsPlugin;
+        let audioContext;
+        let audioBuffer;
+        let currentFile;
+        let cutSegments = []; // Store all cut segments
+        let segmentCounter = 0; // Segment counter
+        let isPlaying = false; // Playing state
+        let selectedRegion = null; // Currently selected region
+        let selectedSegment = null; // Currently selected segment
+        let vadInstance = null; // VAD instance
+        let regionSegmentMap = new Map(); // Mapping between regions and segments
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function () {
+            const fileInput = document.getElementById('fileInput');
+            fileInput.addEventListener('change', handleFileUpload);
+
+            // Playback control events
+            document.getElementById('playPauseBtn').addEventListener('click', togglePlayPause);
+            document.getElementById('stopBtn').addEventListener('click', () => {
+                if (wavesurfer) {
+                    wavesurfer.stop();
+                    updatePlayPauseButton(false);
+                }
+            });
+            document.getElementById('volumeSlider').addEventListener('input', (e) => {
+                if (wavesurfer) wavesurfer.setVolume(e.target.value / 100);
+            });
+
+            // Region management events
+            document.getElementById('addRegionBtn').addEventListener('click', addRandomRegion);
+            document.getElementById('autoVadBtn').addEventListener('click', performVadCutting);
+            document.getElementById('clearRegionsBtn').addEventListener('click', clearAllRegions);
+            document.getElementById('playRegionBtn').addEventListener('click', playSelectedRegion);
+            document.getElementById('locateRegionBtn').addEventListener('click', locateSelectedRegion);
+            document.getElementById('deleteRegionBtn').addEventListener('click', deleteSelectedRegion);
+
+            // Cut result management events
+            document.getElementById('transcribeAllBtn').addEventListener('click', transcribeAllSegments);
+            document.getElementById('copyAllTranscriptionBtn').addEventListener('click', copyAllTranscriptions);
+            document.getElementById('downloadAllBtn').addEventListener('click', downloadAllSegments);
+            document.getElementById('clearAllBtn').addEventListener('click', clearAllSegments);
+
+            // Whisper settings events
+            document.getElementById('saveWhisperSettings').addEventListener('click', saveWhisperSettings);
+
+            // Load saved settings
+            loadWhisperSettings();
+        });
+
+        function playSelectedRegion() {
+            if (selectedRegion) {
+                playRegion(selectedRegion);
+            }
+        }
+
+        // New: Locate to segment corresponding to selected region
+        function locateSelectedRegion() {
+            if (selectedRegion) {
+                const segmentId = regionSegmentMap.get(selectedRegion);
+                if (segmentId) {
+                    scrollToSegment(segmentId);
+                    highlightSegment(segmentId);
+                }
+            }
+        }
+
+        // New: Delete selected region
+        function deleteSelectedRegion() {
+            if (selectedRegion) {
+                selectedRegion.remove(); // This will trigger region-removed event, automatically clean up related data
+            }
+        }
+
+        // Scroll to specified segment
+        function scrollToSegment(segmentId) {
+            const segmentElement = document.getElementById(`segment-${segmentId}`);
+            if (segmentElement) {
+                segmentElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            }
+        }
+
+        function togglePlayPause() {
+            if (!wavesurfer) return;
+
+            if (isPlaying) {
+                wavesurfer.pause();
+            } else {
+                wavesurfer.play();
+            }
+        }
+
+        function updatePlayPauseButton(playing) {
+            isPlaying = playing;
+            const playIcon = document.getElementById('playIcon');
+            const pauseIcon = document.getElementById('pauseIcon');
+            const playPauseText = document.getElementById('playPauseText');
+
+            if (playing) {
+                playIcon.classList.add('hidden');
+                pauseIcon.classList.remove('hidden');
+                playPauseText.textContent = 'Pause';
+            } else {
+                playIcon.classList.remove('hidden');
+                pauseIcon.classList.add('hidden');
+                playPauseText.textContent = 'Play';
+            }
+        }
+
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            currentFile = file;
+            showProgress('Processing file...');
+
+            try {
+                let audioFile = file;
+
+                // If it's an MP4 file, try to extract audio
+                if (file.type === 'video/mp4' || file.name.toLowerCase().endsWith('.mp4')) {
+                    try {
+                        audioFile = await extractAudioFromVideo(file);
+                        showProgress('Audio extraction successful, loading waveform...');
+                    } catch (error) {
+                        console.warn('MP4 audio extraction failed, trying direct load:', error);
+                        audioFile = file;
+                    }
+                }
+
+                // Display file information
+                displayFileInfo(file);
+
+                // Initialize waveform
+                await initWaveform(audioFile);
+
+                hideProgress();
+                showAudioControls();
+
+            } catch (error) {
+                console.error('Error processing file:', error);
+                hideProgress();
+                showError('Error processing file: ' + error.message + '. Please ensure the file format is correct and not corrupted.');
+            }
+        }
+
+        async function extractAudioFromVideo(videoFile) {
+            return new Promise((resolve, reject) => {
+                const video = document.createElement('video');
+                video.crossOrigin = 'anonymous';
+                video.muted = true;
+
+                video.onloadedmetadata = () => {
+                    try {
+                        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                        const source = audioCtx.createMediaElementSource(video);
+                        const destination = audioCtx.createMediaStreamDestination();
+                        source.connect(destination);
+                        source.connect(audioCtx.destination);
+
+                        const mediaRecorder = new MediaRecorder(destination.stream, {
+                            mimeType: 'audio/webm;codecs=opus'
+                        });
+                        const chunks = [];
+
+                        mediaRecorder.ondataavailable = (e) => {
+                            if (e.data.size > 0) {
+                                chunks.push(e.data);
+                            }
+                        };
+
+                        mediaRecorder.onstop = () => {
+                            const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+                            audioCtx.close();
+                            resolve(audioBlob);
+                        };
+
+                        mediaRecorder.onerror = (e) => {
+                            audioCtx.close();
+                            reject(e);
+                        };
+
+                        video.onended = () => {
+                            mediaRecorder.stop();
+                        };
+
+                        mediaRecorder.start();
+                        video.play();
+
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+
+                video.onerror = (e) => {
+                    reject(new Error('Unable to load video file'));
+                };
+
+                video.src = URL.createObjectURL(videoFile);
+            });
+        }
+
+        async function initWaveform(audioFile) {
+            // Destroy existing waveform
+            if (wavesurfer) {
+                wavesurfer.destroy();
+            }
+
+            // Create regions plugin
+            regionsPlugin = WaveSurfer.Regions.create();
+
+            // Create new waveform
+            wavesurfer = WaveSurfer.create({
+                container: '#waveform',
+                waveColor: '#4f46e5',
+                progressColor: '#7c3aed',
+                cursorColor: '#ef4444',
+                barWidth: 2,
+                barRadius: 3,
+                responsive: true,
+                height: 128,
+                normalize: true,
+                interact: true,
+                minPxPerSec: 50,
+                dragToSeek: true,
+                plugins: [regionsPlugin]
+            });
+
+            // Load audio file
+            await wavesurfer.loadBlob(audioFile);
+
+            // Create audio context and decode audio data
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            const arrayBuffer = await audioFile.arrayBuffer();
+            audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+            // Setup region event listeners
+            setupRegionEvents();
+
+            // Waveform event listeners
+            wavesurfer.on('ready', () => {
+                const duration = wavesurfer.getDuration();
+                document.getElementById('totalTime').textContent = formatTime(duration);
+                updatePlayPauseButton(false);
+            });
+
+            wavesurfer.on('audioprocess', () => {
+                const currentTime = wavesurfer.getCurrentTime();
+                document.getElementById('currentTime').textContent = formatTimeWithDecimals(currentTime);
+            });
+
+            wavesurfer.on('play', () => {
+                updatePlayPauseButton(true);
+            });
+
+            wavesurfer.on('pause', () => {
+                updatePlayPauseButton(false);
+            });
+
+            wavesurfer.on('finish', () => {
+                updatePlayPauseButton(false);
+            });
+
+            // Double-click to add region
+            wavesurfer.on('dblclick', (relativeX) => {
+                const duration = wavesurfer.getDuration();
+                const clickTime = relativeX * duration;
+
+                // Create a default 3-second region centered on click position
+                const regionDuration = Math.min(3, duration * 0.1); // Maximum 3 seconds or 10% of audio
+                const start = Math.max(0, clickTime - regionDuration / 2);
+                const end = Math.min(duration, start + regionDuration);
+
+                const region = addRegion(start, end);
+                selectRegion(region);
+            });
+        }
+
+        function setupRegionEvents() {
+            // Region click event - select only, don't jump
+            regionsPlugin.on('region-clicked', (region, e) => {
+                e.stopPropagation();
+                selectRegion(region);
+                // Removed automatic jump logic
+            });
+
+            // Region update event - synchronously update corresponding segment
+            regionsPlugin.on('region-updated', (region) => {
+                if (selectedRegion === region) {
+                    updateRegionInfo(region);
+                }
+
+                // Synchronously update corresponding segment
+                const segmentId = regionSegmentMap.get(region);
+                if (segmentId) {
+                    updateSegmentFromRegion(region, segmentId);
+                }
+            });
+
+            // Region removal event - synchronously delete corresponding segment
+            regionsPlugin.on('region-removed', (region) => {
+                if (selectedRegion === region) {
+                    selectedRegion = null;
+                    hideRegionInfo();
+                }
+
+                // Delete corresponding segment
+                const segmentId = regionSegmentMap.get(region);
+                if (segmentId) {
+                    removeSegmentSilently(segmentId);
+                    regionSegmentMap.delete(region);
+                }
+            });
+
+            // Right-click to delete region
+            regionsPlugin.on('region-clicked', (region, e) => {
+                if (e.button === 2) { // Right-click
+                    e.preventDefault();
+                    region.remove();
+                }
+            });
+        }
+
+        function addRegion(start, end, options = {}) {
+            const region = regionsPlugin.addRegion({
+                start: start,
+                end: end,
+                color: options.color || 'rgba(0, 123, 255, 0.2)',
+                drag: true,
+                resize: true,
+                ...options
+            });
+
+            // Immediately create corresponding segment for new region
+            if (!options.skipSegmentCreation) {
+                createSegmentFromRegion(region);
+            }
+
+            return region;
+        }
+
+        async function createSegmentFromRegion(region) {
+            if (!audioBuffer) return;
+
+            try {
+                const segment = await cutRegionToSegment(region);
+
+                // Establish mapping between region and segment
+                regionSegmentMap.set(region, segment.id);
+
+                // Add to segments array
+                cutSegments.push(segment);
+
+                // Display segment
+                await addSegmentToList(segment);
+
+                // Show manager
+                document.getElementById('cutResultsManager').classList.remove('hidden');
+
+                // Update count
+                updateSegmentCount();
+
+            } catch (error) {
+                console.error('Error creating segment from region:', error);
+                showError('Failed to create segment: ' + error.message);
+            }
+        }
+
+        async function updateSegmentFromRegion(region, segmentId) {
+            if (!audioBuffer) return;
+
+            try {
+                // Find corresponding segment
+                const segmentIndex = cutSegments.findIndex(s => s.id === segmentId);
+                if (segmentIndex === -1) return;
+
+                const oldSegment = cutSegments[segmentIndex];
+
+                // Re-cut audio
+                const newSegment = await cutRegionToSegment(region, segmentId);
+
+                // Update segment data
+                cutSegments[segmentIndex] = newSegment;
+
+                // Destroy old waveform
+                if (oldSegment.wavesurfer) {
+                    oldSegment.wavesurfer.destroy();
+                }
+
+                // Update segment information in DOM
+                updateSegmentInDOM(newSegment);
+
+                // Recreate waveform
+                await createSegmentWaveform(newSegment);
+
+            } catch (error) {
+                console.error('Error updating segment:', error);
+                showError('Failed to update segment: ' + error.message);
+            }
+        }
+
+        async function cutRegionToSegment(region, existingId = null) {
+            const startTime = region.start;
+            const endTime = region.end;
+
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const sampleRate = audioBuffer.sampleRate;
+            const startSample = Math.floor(startTime * sampleRate);
+            const endSample = Math.floor(endTime * sampleRate);
+            const frameCount = endSample - startSample;
+
+            // Create new audio buffer
+            const newBuffer = audioCtx.createBuffer(
+                audioBuffer.numberOfChannels,
+                frameCount,
+                sampleRate
+            );
+
+            // Copy audio data
+            for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
+                const oldData = audioBuffer.getChannelData(channel);
+                const newData = newBuffer.getChannelData(channel);
+
+                for (let i = 0; i < frameCount; i++) {
+                    newData[i] = oldData[startSample + i];
+                }
+            }
+
+            // Convert to WAV format
+            const wavFile = bufferToWav(newBuffer);
+            const audioBlob = new Blob([wavFile], { type: 'audio/wav' });
+
+            // Create or update segment object
+            const segmentId = existingId || ++segmentCounter;
+            const segment = {
+                id: segmentId,
+                startTime: startTime,
+                endTime: endTime,
+                duration: endTime - startTime,
+                blob: audioBlob,
+                audioBuffer: newBuffer,
+                filename: `segment_${segmentId}_${startTime.toFixed(1)}s_${endTime.toFixed(1)}s.wav`,
+                transcription: existingId ? cutSegments.find(s => s.id === existingId)?.transcription : undefined
+            };
+
+            return segment;
+        }
+
+        function updateSegmentInDOM(segment) {
+            const segmentElement = document.getElementById(`segment-${segment.id}`);
+            if (!segmentElement) return;
+
+            // Update time information
+            const timeInfo = segmentElement.querySelector('.text-sm.text-base-content\\/70');
+            if (timeInfo) {
+                timeInfo.textContent = `${formatTime(segment.startTime)} - ${formatTime(segment.endTime)} (${formatTime(segment.duration)}) | ${formatFileSize(segment.blob.size)}`;
+            }
+
+            // Update filename
+            segment.filename = `segment_${segment.id}_${segment.startTime.toFixed(1)}s_${segment.endTime.toFixed(1)}s.wav`;
+        }
+
+        function addRandomRegion() {
+            if (!wavesurfer) return;
+
+            const duration = wavesurfer.getDuration();
+            const regionDuration = Math.min(5, duration * 0.1); // 5 seconds or 10% of audio
+            const maxStart = duration - regionDuration;
+            const start = Math.random() * maxStart;
+            const end = start + regionDuration;
+
+            const region = addRegion(start, end);
+            selectRegion(region);
+        }
+
+        function clearAllRegions() {
+            if (regionsPlugin) {
+                // Clear mapping relationships
+                regionSegmentMap.clear();
+
+                // Clear all regions (this will trigger deletion events, automatically delete corresponding segments)
+                regionsPlugin.clearRegions();
+                selectedRegion = null;
+                hideRegionInfo();
+            }
+        }
+
+        function selectRegion(region) {
+            // Remove highlight from previously selected region
+            if (selectedRegion) {
+                selectedRegion.setOptions({ color: 'rgba(0, 123, 255, 0.2)' });
+            }
+
+            // Set new selected region
+            selectedRegion = region;
+            region.setOptions({ color: 'rgba(255, 193, 7, 0.3)' }); // Highlight color
+
+            updateRegionInfo(region);
+            showRegionInfo();
+
+            // No longer automatically highlight corresponding segment, user must actively click locate button
+        }
+
+        function highlightSegment(segmentId) {
+            // Remove highlight from previous segment
+            if (selectedSegment) {
+                const prevElement = document.getElementById(`segment-${selectedSegment}`);
+                if (prevElement) {
+                    prevElement.classList.remove('ring-2', 'ring-warning', 'bg-warning/10');
+                    prevElement.classList.add('bg-base-200');
+                }
+            }
+
+            // Set new highlighted segment
+            selectedSegment = segmentId;
+            const segmentElement = document.getElementById(`segment-${segmentId}`);
+            if (segmentElement) {
+                segmentElement.classList.remove('bg-base-200');
+                segmentElement.classList.add('ring-2', 'ring-warning', 'bg-warning/10');
+            }
+        }
+
+        // Modified: Function to locate from segment to main audio region
+        function locateToMainAudio(segmentId) {
+            // Highlight segment
+            highlightSegment(segmentId);
+
+            // Find corresponding region and highlight
+            for (let [region, mappedSegmentId] of regionSegmentMap.entries()) {
+                if (mappedSegmentId === segmentId) {
+                    selectRegion(region);
+
+                    // Scroll main audio to corresponding position
+                    const progress = region.start / wavesurfer.getDuration();
+                    wavesurfer.seekTo(progress);
+
+                    // Scroll to main audio region
+                    document.getElementById('waveformContainer').scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                    break;
+                }
+            }
+        }
+
+        function updateRegionInfo(region) {
+            const start = region.start;
+            const end = region.end;
+            const duration = end - start;
+
+            document.getElementById('regionTimeInfo').textContent =
+                `${formatTimeWithDecimals(start)} - ${formatTimeWithDecimals(end)} (${formatTimeWithDecimals(duration)})`;
+        }
+
+        function showRegionInfo() {
+            document.getElementById('regionInfo').classList.remove('hidden');
+        }
+
+        function hideRegionInfo() {
+            document.getElementById('regionInfo').classList.add('hidden');
+        }
+
+        function playRegion(region) {
+            if (!wavesurfer || !region) return;
+
+            // Play specified region
+            wavesurfer.seekTo(region.start / wavesurfer.getDuration());
+            wavesurfer.play();
+
+            // Stop when region ends
+            const duration = (region.end - region.start) * 1000;
+            setTimeout(() => {
+                if (wavesurfer.isPlaying()) {
+                    wavesurfer.pause();
+                }
+            }, duration);
+        }
+
+        async function performVadCutting() {
+            if (!audioBuffer) {
+                showError('Please upload an audio file first');
+                return;
+            }
+
+            // Reinitialize VAD instance each time to apply new parameters
+            vadInstance = null;
+
+            const vadBtn = document.getElementById('autoVadBtn');
+            const originalText = vadBtn.innerHTML;
+
+            // Show loading state
+            vadBtn.disabled = true;
+            vadBtn.innerHTML = `
+                <span class="loading loading-spinner loading-sm"></span>
+                Detecting...
+            `;
+
+            try {
+                showProgress('Initializing VAD model...');
+
+                // Initialize VAD instance
+                if (!vadInstance) {
+                    // Get redemptionFrames value from input field
+                    const redemptionFrames = parseInt(document.getElementById('redemptionFrames').value) || 3;
+
+                    const vadOptions = {
+                        preSpeechPadFrames: 4,
+                        minSpeechFrames: 5,
+                        redemptionFrames: redemptionFrames,
+                        onMissingSourcesReceived: () => {
+                            console.log("Model sources not found, using default configuration");
+                        }
+                    };
+                    console.log('VAD configuration parameters:', vadOptions);
+                    vadInstance = await vad.NonRealTimeVAD.new(vadOptions);
+                }
+
+                showProgress('Analyzing audio, detecting speech segments...');
+
+                // Prepare audio data - VAD requires mono 16kHz audio
+                const audioData = await prepareAudioForVad(audioBuffer);
+                const sampleRate = 16000; // VAD typically uses 16kHz
+
+                // Run VAD detection
+                const speechSegments = [];
+                let segmentCount = 0;
+
+                for await (const { audio, start, end } of vadInstance.run(audioData, sampleRate)) {
+                    segmentCount++;
+                    showProgress(`Detected ${segmentCount} speech segments...`);
+
+                    // Convert milliseconds to seconds and map back to original audio duration
+                    const originalDuration = audioBuffer.duration;
+                    const vadDuration = audioData.length / sampleRate;
+                    const timeScale = originalDuration / vadDuration;
+
+                    const startTime = (start / 1000) * timeScale;
+                    const endTime = (end / 1000) * timeScale;
+
+                    // Filter out segments that are too short (less than 0.5 seconds)
+                    if (endTime - startTime >= 0.5) {
+                        speechSegments.push({
+                            start: Math.max(0, startTime),
+                            end: Math.min(originalDuration, endTime),
+                            duration: endTime - startTime
+                        });
+                    }
+                }
+
+                hideProgress();
+
+                if (speechSegments.length === 0) {
+                    showError('No speech segments detected, please check audio quality or try adjusting volume');
+                    return;
+                }
+
+                // Clear existing regions
+                if (regionsPlugin) {
+                    clearAllRegions();
+                }
+
+                // Create regions for each detected speech segment
+                showProgress(`Creating ${speechSegments.length} speech regions...`);
+
+                for (let i = 0; i < speechSegments.length; i++) {
+                    const segment = speechSegments[i];
+
+                    // Create region, use different color to indicate VAD-detected segments
+                    const region = addRegion(segment.start, segment.end, {
+                        color: 'rgba(34, 197, 94, 0.25)', // Green indicates automatic detection
+                        skipSegmentCreation: false
+                    });
+
+                    // Slight delay to avoid interface freezing
+                    if (i % 5 === 0) {
+                        await new Promise(resolve => setTimeout(resolve, 10));
+                        showProgress(`Creating region ${i + 1}/${speechSegments.length}...`);
+                    }
+                }
+
+                hideProgress();
+                showSuccess(`Successfully detected and created ${speechSegments.length} speech segments!`);
+
+                // Display statistics
+                const totalDuration = speechSegments.reduce((sum, seg) => sum + seg.duration, 0);
+                const coverage = (totalDuration / audioBuffer.duration * 100).toFixed(1);
+
+                setTimeout(() => {
+                    showSuccess(`Speech coverage: ${coverage}%, average segment length: ${(totalDuration / speechSegments.length).toFixed(1)} seconds`);
+                }, 2000);
+
+            } catch (error) {
+                console.error('VAD cutting failed:', error);
+                hideProgress();
+                showError('Speech detection failed: ' + error.message);
+            } finally {
+                // Restore button state
+                vadBtn.disabled = false;
+                vadBtn.innerHTML = originalText;
+            }
+        }
+
+        async function prepareAudioForVad(audioBuffer) {
+            // VAD typically requires 16kHz mono audio
+            const targetSampleRate = 16000;
+            const sourceSampleRate = audioBuffer.sampleRate;
+
+            // Get first channel data (convert to mono)
+            let audioData = audioBuffer.getChannelData(0);
+
+            // If sample rate is not 16kHz, resampling is needed
+            if (sourceSampleRate !== targetSampleRate) {
+                audioData = await resampleAudio(audioData, sourceSampleRate, targetSampleRate);
+            }
+
+            return audioData;
+        }
+
+        async function resampleAudio(audioData, sourceSampleRate, targetSampleRate) {
+            // Simple linear interpolation resampling
+            const ratio = sourceSampleRate / targetSampleRate;
+            const targetLength = Math.floor(audioData.length / ratio);
+            const resampledData = new Float32Array(targetLength);
+
+            for (let i = 0; i < targetLength; i++) {
+                const sourceIndex = i * ratio;
+                const index = Math.floor(sourceIndex);
+                const fraction = sourceIndex - index;
+
+                if (index + 1 < audioData.length) {
+                    // Linear interpolation
+                    resampledData[i] = audioData[index] * (1 - fraction) + audioData[index + 1] * fraction;
+                } else {
+                    resampledData[i] = audioData[index] || 0;
+                }
+            }
+
+            return resampledData;
+        }
+
+        function displayFileInfo(file) {
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileSize').textContent = formatFileSize(file.size);
+            document.getElementById('audioInfo').classList.remove('hidden');
+        }
+
+        function showAudioControls() {
+            document.getElementById('waveformContainer').classList.remove('hidden');
+        }
+
+        function showProgress(message) {
+            document.getElementById('progressText').textContent = message;
+            document.getElementById('uploadProgress').classList.remove('hidden');
+        }
+
+        function hideProgress() {
+            document.getElementById('uploadProgress').classList.add('hidden');
+        }
+
+        function showError(message) {
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-error mt-4';
+            alert.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>${message}</span>
+            `;
+            document.querySelector('.container').appendChild(alert);
+            setTimeout(() => alert.remove(), 5000);
+        }
+
+        function showSuccess(message) {
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success mt-4';
+            alert.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>${message}</span>
+            `;
+            document.querySelector('.container').appendChild(alert);
+            setTimeout(() => alert.remove(), 3000);
+        }
+
+        async function addSegmentToList(segment) {
+            const segmentDiv = document.createElement('div');
+            segmentDiv.className = 'card bg-base-200 border border-base-300 cursor-pointer transition-all duration-200 hover:shadow-md';
+            segmentDiv.id = `segment-${segment.id}`;
+
+            // Modified: No longer automatically locate when clicking segment card, remove click event
+            // segmentDiv.addEventListener('click', (e) => {
+            //     // If clicking on button, don't trigger selection
+            //     if (e.target.closest('button')) return;
+            //     locateToMainAudio(segment.id);
+            // });
+
+            segmentDiv.innerHTML = `
+                <div class="card-body p-4">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h3 class="font-semibold">Segment ${segment.id}</h3>
+                            <div class="text-sm text-base-content/70">
+                                ${formatTime(segment.startTime)} - ${formatTime(segment.endTime)} 
+                                (${formatTime(segment.duration)}) | ${formatFileSize(segment.blob.size)}
+                            </div>
+                        </div>
+                        <button class="btn btn-ghost btn-xs" onclick="removeSegment(${segment.id})">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <!-- Waveform Display -->
+                    <div id="waveform-${segment.id}" class="w-full h-20 bg-base-100 rounded border mb-3"></div>
+                    
+                    <!-- Control Buttons -->
+                    <div class="flex gap-2">
+                        <button class="btn btn-xs btn-primary" onclick="playSegment(${segment.id})">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.586a1 1 0 01.707.293l4.828 4.828a4 4 0 105.656-5.656l-4.828-4.828A1 1 0 0116.586 4H15m-6 6v6m6-6v6m-6-6H9" />
+                            </svg>
+                            Play
+                        </button>
+                        <button class="btn btn-xs btn-info" onclick="transcribeSegment(${segment.id})">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                            </svg>
+                            Transcribe
+                        </button>
+                        <button class="btn btn-xs btn-accent" onclick="locateToMainAudio(${segment.id})">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            Locate
+                        </button>
+                        <button class="btn btn-xs btn-success" onclick="downloadSegment(${segment.id})">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            Download
+                        </button>
+                    </div>
+                    
+                    <!-- Transcription Result Display Area -->
+                    <div id="transcription-${segment.id}" class="hidden mt-3">
+                        <div class="divider my-2"></div>
+                        <div class="flex items-start gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mt-0.5 text-info flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-center mb-1">
+                                    <div class="text-sm font-medium text-base-content">Transcription Result:</div>
+                                    <div class="flex gap-1">
+                                        <button class="btn btn-ghost btn-xs" onclick="toggleEditTranscription(${segment.id})">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                            <span id="edit-btn-text-${segment.id}">Edit</span>
+                                        </button>
+                                        <button class="btn btn-ghost btn-xs" onclick="copyTranscription(${segment.id})">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                            </svg>
+                                            Copy
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="transcription-display-${segment.id}" class="text-sm text-base-content/80 bg-base-200 p-2 rounded whitespace-pre-wrap"></div>
+                                <textarea id="transcription-edit-${segment.id}" class="textarea textarea-bordered text-sm w-full min-h-16 hidden" placeholder="Edit transcription result here..."></textarea>
+                                <div id="transcription-edit-actions-${segment.id}" class="flex justify-end gap-2 mt-2 hidden">
+                                    <button class="btn btn-ghost btn-xs" onclick="cancelEditTranscription(${segment.id})">Cancel</button>
+                                    <button class="btn btn-primary btn-xs" onclick="saveEditTranscription(${segment.id})">Save</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('segmentsList').appendChild(segmentDiv);
+            await createSegmentWaveform(segment);
+        }
+
+        async function createSegmentWaveform(segment) {
+            try {
+                const segmentWavesurfer = WaveSurfer.create({
+                    container: `#waveform-${segment.id}`,
+                    waveColor: '#10b981',
+                    progressColor: '#059669',
+                    cursorColor: '#ef4444',
+                    barWidth: 2,
+                    barRadius: 3,
+                    responsive: true,
+                    height: 80,
+                    normalize: true,
+                    interact: true
+                });
+
+                await segmentWavesurfer.loadBlob(segment.blob);
+                segment.wavesurfer = segmentWavesurfer;
+
+            } catch (error) {
+                console.error('Error creating segment waveform:', error);
+            }
+        }
+
+        function updateSegmentCount() {
+            document.getElementById('segmentCount').textContent = cutSegments.length;
+            document.getElementById('totalSegments').textContent = cutSegments.length;
+        }
+
+        // Global functions
+        window.playSegment = function (segmentId) {
+            const segment = cutSegments.find(s => s.id === segmentId);
+            if (segment && segment.wavesurfer) {
+                cutSegments.forEach(s => {
+                    if (s.wavesurfer && s.id !== segmentId) {
+                        s.wavesurfer.pause();
+                    }
+                });
+                if (wavesurfer) {
+                    wavesurfer.pause();
+                }
+                segment.wavesurfer.playPause();
+            }
+        };
+
+        window.transcribeSegment = async function (segmentId) {
+            const segment = cutSegments.find(s => s.id === segmentId);
+            if (!segment) {
+                console.error('Segment does not exist:', segmentId);
+                return;
+            }
+
+            if (!window.whisperConfig || !window.whisperConfig.url) {
+                showError('Please configure Whisper API URL first');
+                return;
+            }
+
+            const transcriptionBtn = document.querySelector(`button[onclick="transcribeSegment(${segmentId})"]`);
+            if (!transcriptionBtn) {
+                console.error('Cannot find transcription button:', segmentId);
+                return;
+            }
+
+            const originalText = transcriptionBtn.innerHTML;
+
+            transcriptionBtn.disabled = true;
+            transcriptionBtn.innerHTML = `
+                <span class="loading loading-spinner loading-xs"></span>
+                Transcribing...
+            `;
+
+            try {
+                await transcribeSegmentInternal(segmentId);
+            } catch (error) {
+                console.error('Speech recognition failed:', error);
+                showError(`Segment ${segmentId} transcription failed: ${error.message}`);
+            } finally {
+                transcriptionBtn.disabled = false;
+                transcriptionBtn.innerHTML = originalText;
+            }
+        };
+
+        window.downloadSegment = function (segmentId) {
+            const segment = cutSegments.find(s => s.id === segmentId);
+            if (segment) {
+                const url = URL.createObjectURL(segment.blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = segment.filename;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+        };
+
+        window.removeSegment = function (segmentId) {
+            const segmentIndex = cutSegments.findIndex(s => s.id === segmentId);
+            if (segmentIndex !== -1) {
+                const segment = cutSegments[segmentIndex];
+
+                // Destroy waveform instance
+                if (segment.wavesurfer) {
+                    segment.wavesurfer.destroy();
+                }
+
+                // Find corresponding region and delete
+                for (let [region, mappedSegmentId] of regionSegmentMap.entries()) {
+                    if (mappedSegmentId === segmentId) {
+                        regionSegmentMap.delete(region);
+                        region.remove(); // This will trigger region-removed event
+                        break;
+                    }
+                }
+
+                // Remove from array
+                cutSegments.splice(segmentIndex, 1);
+
+                // Remove from DOM
+                const segmentElement = document.getElementById(`segment-${segmentId}`);
+                if (segmentElement) {
+                    segmentElement.remove();
+                }
+
+                // Update count
+                updateSegmentCount();
+
+                // If no segments left, hide manager
+                if (cutSegments.length === 0) {
+                    document.getElementById('cutResultsManager').classList.add('hidden');
+                }
+            }
+        };
+
+        // Silently delete segment (don't trigger region deletion, used when region is deleted)
+        function removeSegmentSilently(segmentId) {
+            const segmentIndex = cutSegments.findIndex(s => s.id === segmentId);
+            if (segmentIndex !== -1) {
+                const segment = cutSegments[segmentIndex];
+
+                // Destroy waveform instance
+                if (segment.wavesurfer) {
+                    segment.wavesurfer.destroy();
+                }
+
+                // Clear selection state
+                if (selectedSegment === segmentId) {
+                    selectedSegment = null;
+                }
+
+                // Remove from array
+                cutSegments.splice(segmentIndex, 1);
+
+                // Remove from DOM
+                const segmentElement = document.getElementById(`segment-${segmentId}`);
+                if (segmentElement) {
+                    segmentElement.remove();
+                }
+
+                // Update count
+                updateSegmentCount();
+
+                // If no segments left, hide manager
+                if (cutSegments.length === 0) {
+                    document.getElementById('cutResultsManager').classList.add('hidden');
+                }
+            }
+        }
+
+        // Edit transcription result related functions
+        window.toggleEditTranscription = function (segmentId) {
+            const displayDiv = document.getElementById(`transcription-display-${segmentId}`);
+            const editTextarea = document.getElementById(`transcription-edit-${segmentId}`);
+            const editActions = document.getElementById(`transcription-edit-actions-${segmentId}`);
+            const editBtnText = document.getElementById(`edit-btn-text-${segmentId}`);
+
+            const segment = cutSegments.find(s => s.id === segmentId);
+            if (!segment) return;
+
+            if (displayDiv.classList.contains('hidden')) {
+                // Currently in edit mode, switch to display mode
+                cancelEditTranscription(segmentId);
+            } else {
+                // Currently in display mode, switch to edit mode
+                displayDiv.classList.add('hidden');
+                editTextarea.classList.remove('hidden');
+                editActions.classList.remove('hidden');
+                editBtnText.textContent = 'Cancel';
+
+                // Fill current text into edit box
+                editTextarea.value = segment.transcription || '';
+                editTextarea.focus();
+            }
+        };
+
+        window.cancelEditTranscription = function (segmentId) {
+            const displayDiv = document.getElementById(`transcription-display-${segmentId}`);
+            const editTextarea = document.getElementById(`transcription-edit-${segmentId}`);
+            const editActions = document.getElementById(`transcription-edit-actions-${segmentId}`);
+            const editBtnText = document.getElementById(`edit-btn-text-${segmentId}`);
+
+            // Switch back to display mode
+            displayDiv.classList.remove('hidden');
+            editTextarea.classList.add('hidden');
+            editActions.classList.add('hidden');
+            editBtnText.textContent = 'Edit';
+        };
+
+        window.saveEditTranscription = function (segmentId) {
+            const displayDiv = document.getElementById(`transcription-display-${segmentId}`);
+            const editTextarea = document.getElementById(`transcription-edit-${segmentId}`);
+            const editActions = document.getElementById(`transcription-edit-actions-${segmentId}`);
+            const editBtnText = document.getElementById(`edit-btn-text-${segmentId}`);
+
+            const segment = cutSegments.find(s => s.id === segmentId);
+            if (!segment) return;
+
+            // Save edited text
+            const editedText = editTextarea.value.trim();
+            segment.transcription = editedText;
+
+            // Update displayed text
+            displayDiv.textContent = editedText;
+
+            // Switch back to display mode
+            displayDiv.classList.remove('hidden');
+            editTextarea.classList.add('hidden');
+            editActions.classList.add('hidden');
+            editBtnText.textContent = 'Edit';
+
+            showSuccess(`Transcription result for segment ${segmentId} has been updated`);
+        };
+
+        window.copyTranscription = async function (segmentId) {
+            const segment = cutSegments.find(s => s.id === segmentId);
+            if (!segment || !segment.transcription) {
+                showError('No transcription results to copy');
+                return;
+            }
+
+            const textToCopy = `${segment.filename}|${segment.transcription}`;
+
+            try {
+                await navigator.clipboard.writeText(textToCopy);
+                showSuccess('Transcription result copied to clipboard');
+            } catch (error) {
+                console.error('Copy failed:', error);
+                const textArea = document.createElement('textarea');
+                textArea.value = textToCopy;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    showSuccess('Transcription result copied to clipboard');
+                } catch (fallbackError) {
+                    showError('Copy failed, please copy manually');
+                }
+                document.body.removeChild(textArea);
+            }
+        };
+
+        // Cut result management functions
+        function downloadAllSegments() {
+            if (cutSegments.length === 0) return;
+
+            cutSegments.forEach((segment, index) => {
+                setTimeout(() => {
+                    const url = URL.createObjectURL(segment.blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = segment.filename;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                }, index * 100);
+            });
+        }
+
+        function clearAllSegments() {
+            // Destroy all waveform instances
+            cutSegments.forEach(segment => {
+                if (segment.wavesurfer) {
+                    segment.wavesurfer.destroy();
+                }
+            });
+
+            // Clear arrays
+            cutSegments = [];
+            segmentCounter = 0;
+
+            // Clear selection state
+            selectedSegment = null;
+            selectedRegion = null;
+
+            // Clear mapping relationships and regions
+            regionSegmentMap.clear();
+            if (regionsPlugin) {
+                regionsPlugin.clearRegions();
+            }
+            hideRegionInfo();
+
+            // Clear list
+            document.getElementById('segmentsList').innerHTML = '';
+
+            // Update count
+            updateSegmentCount();
+
+            // Hide manager
+            document.getElementById('cutResultsManager').classList.add('hidden');
+        }
+
+        async function transcribeAllSegments() {
+            if (cutSegments.length === 0) {
+                showError('No segments available for transcription');
+                return;
+            }
+
+            if (!window.whisperConfig || !window.whisperConfig.url) {
+                showError('Please configure Whisper API URL first');
+                return;
+            }
+
+            const transcribeAllBtn = document.getElementById('transcribeAllBtn');
+            const originalText = transcribeAllBtn.innerHTML;
+
+            transcribeAllBtn.disabled = true;
+            let completed = 0;
+
+            const updateProgress = () => {
+                transcribeAllBtn.innerHTML = `
+                    <span class="loading loading-spinner loading-sm"></span>
+                    Transcribing ${completed}/${cutSegments.length}
+                `;
+            };
+
+            updateProgress();
+
+            try {
+                const concurrentLimit = 3;
+                const results = [];
+
+                // Process in batches to avoid API limits
+                for (let i = 0; i < cutSegments.length; i += concurrentLimit) {
+                    const batch = cutSegments.slice(i, i + concurrentLimit);
+                    const batchPromises = batch.map(async (segment) => {
+                        try {
+                            console.log(`Starting transcription for segment ${segment.id}`);
+                            await transcribeSegmentInternal(segment.id);
+                            completed++;
+                            updateProgress();
+                            console.log(`Segment ${segment.id} transcription completed`);
+                            return { success: true, segmentId: segment.id };
+                        } catch (error) {
+                            completed++;
+                            updateProgress();
+                            console.error(`Segment ${segment.id} transcription failed:`, error);
+                            return { success: false, segmentId: segment.id, error: error.message };
+                        }
+                    });
+
+                    const batchResults = await Promise.all(batchPromises);
+                    results.push(...batchResults);
+
+                    // Brief delay between batches to avoid too frequent API requests
+                    if (i + concurrentLimit < cutSegments.length) {
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    }
+                }
+
+                const successCount = results.filter(r => r.success).length;
+                const failCount = results.filter(r => !r.success).length;
+
+                if (failCount > 0) {
+                    console.log('Transcription statistics:', { successCount, failCount, results });
+                    showError(`Transcription completed: ${successCount} successful, ${failCount} failed`);
+                } else {
+                    showSuccess(`All ${successCount} segments transcribed successfully`);
+                }
+
+            } catch (error) {
+                console.error('Batch transcription error:', error);
+                showError('Batch transcription error: ' + error.message);
+            } finally {
+                transcribeAllBtn.disabled = false;
+                transcribeAllBtn.innerHTML = originalText;
+            }
+        }
+
+        async function transcribeSegmentInternal(segmentId) {
+            const segment = cutSegments.find(s => s.id === segmentId);
+            if (!segment) {
+                throw new Error(`Segment ${segmentId} does not exist`);
+            }
+
+            console.log(`Starting transcription for segment ${segmentId}, config:`, window.whisperConfig);
+
+            const formData = new FormData();
+            formData.append('file', segment.blob, segment.filename);
+
+            const language = window.whisperConfig.language || 'zh';
+            if (language !== 'auto') {
+                formData.append('language', language);
+            }
+
+            const headers = {};
+            if (window.whisperConfig.token) {
+                headers['Authorization'] = `Bearer ${window.whisperConfig.token}`;
+            }
+
+            console.log(`Sending transcription request to ${window.whisperConfig.url}`);
+
+            const response = await fetch(window.whisperConfig.url, {
+                method: 'POST',
+                headers: headers,
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`Transcription request failed: ${response.status} ${response.statusText}`, errorText);
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            console.log(`Segment ${segmentId} transcription result:`, result);
+
+            const transcriptionText = result.text || result.transcript || 'Transcription result is empty';
+            displayTranscription(segmentId, transcriptionText);
+
+            return transcriptionText;
+        }
+
+        function displayTranscription(segmentId, text) {
+            const transcriptionDiv = document.getElementById(`transcription-${segmentId}`);
+            const transcriptionDisplay = document.getElementById(`transcription-display-${segmentId}`);
+
+            if (transcriptionDiv && transcriptionDisplay) {
+                // Handle subtitle format with timestamps
+                const cleanText = cleanWhisperTranscription(text);
+
+                const segment = cutSegments.find(s => s.id === segmentId);
+                if (segment) {
+                    segment.transcription = cleanText;
+                }
+
+                transcriptionDisplay.textContent = cleanText;
+                transcriptionDiv.classList.remove('hidden');
+
+                console.log(`Segment ${segmentId} transcription result display completed:`, cleanText);
+            } else {
+                console.error(`Cannot find transcription result display element for segment ${segmentId}`);
+            }
+        }
+
+        function cleanWhisperTranscription(text) {
+            if (!text || typeof text !== 'string') {
+                return 'Transcription result is empty';
+            }
+
+            // Split text by lines
+            const lines = text.split('\n');
+            const cleanedLines = [];
+
+            for (let line of lines) {
+                // Remove leading and trailing spaces
+                line = line.trim();
+
+                // Skip empty lines
+                if (!line) continue;
+
+                // Check if starts with timestamp [HH:MM:SS.mmm --> HH:MM:SS.mmm]
+                const timestampRegex = /^\[\d{2}:\d{2}:\d{2}\.\d{3}\s*-->\s*\d{2}:\d{2}:\d{2}\.\d{3}\]\s*/;
+
+                if (timestampRegex.test(line)) {
+                    // Remove timestamp, keep text content
+                    const textContent = line.replace(timestampRegex, '').trim();
+                    if (textContent) {
+                        cleanedLines.push(textContent);
+                    }
+                } else {
+                    // If not timestamp line, add directly
+                    cleanedLines.push(line);
+                }
+            }
+
+            // Join all lines into one string, connected with spaces
+            const result = cleanedLines.join(' ').trim();
+
+            console.log('Original text:', text);
+            console.log('Cleaned text:', result);
+
+            return result || 'Transcription result is empty';
+        }
+
+        async function copyAllTranscriptions() {
+            const transcribedSegments = cutSegments.filter(segment => segment.transcription);
+
+            if (transcribedSegments.length === 0) {
+                showError('No transcription results to copy');
+                return;
+            }
+
+            const allText = transcribedSegments
+                .map(segment => `${segment.filename}|${segment.transcription}`)
+                .join('\n');
+
+            try {
+                await navigator.clipboard.writeText(allText);
+                showSuccess(`Copied ${transcribedSegments.length} transcription results to clipboard`);
+            } catch (error) {
+                console.error('Copy failed:', error);
+                const textArea = document.createElement('textarea');
+                textArea.value = allText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    showSuccess(`Copied ${transcribedSegments.length} transcription results to clipboard`);
+                } catch (fallbackError) {
+                    showError('Copy failed, please copy manually');
+                }
+                document.body.removeChild(textArea);
+            }
+        }
+
+        function bufferToWav(buffer) {
+            const length = buffer.length;
+            const numberOfChannels = buffer.numberOfChannels;
+            const sampleRate = buffer.sampleRate;
+            const arrayBuffer = new ArrayBuffer(44 + length * numberOfChannels * 2);
+            const view = new DataView(arrayBuffer);
+
+            const writeString = (offset, string) => {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            };
+
+            writeString(0, 'RIFF');
+            view.setUint32(4, 36 + length * numberOfChannels * 2, true);
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, numberOfChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * numberOfChannels * 2, true);
+            view.setUint16(32, numberOfChannels * 2, true);
+            view.setUint16(34, 16, true);
+            writeString(36, 'data');
+            view.setUint32(40, length * numberOfChannels * 2, true);
+
+            // Audio data
+            let offset = 44;
+            for (let i = 0; i < length; i++) {
+                for (let channel = 0; channel < numberOfChannels; channel++) {
+                    const sample = Math.max(-1, Math.min(1, buffer.getChannelData(channel)[i]));
+                    view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+                    offset += 2;
+                }
+            }
+
+            return arrayBuffer;
+        }
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = Math.floor(seconds % 60);
+            return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+        }
+
+        function formatTimeWithDecimals(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = (seconds % 60);
+            return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toFixed(2).padStart(5, '0')}`;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Whisper settings related functions
+        function saveWhisperSettings() {
+            const whisperUrl = document.getElementById('whisperUrl').value;
+            const whisperToken = document.getElementById('whisperToken').value;
+            const whisperLanguage = document.getElementById('whisperLanguage').value;
+
+            if (whisperUrl && !isValidUrl(whisperUrl)) {
+                showError('Please enter a valid URL address');
+                return;
+            }
+
+            window.whisperConfig = {
+                url: whisperUrl,
+                token: whisperToken,
+                language: whisperLanguage
+            };
+
+            console.log('Whisper configuration saved:', window.whisperConfig);
+            showSuccess('Whisper settings saved');
+        }
+
+        function loadWhisperSettings() {
+            if (!window.whisperConfig) {
+                window.whisperConfig = {
+                    url: 'https://whisper.gaia.domains/v1/audio/transcriptions',
+                    token: '',
+                    language: 'auto'
+                };
+            }
+
+            document.getElementById('whisperUrl').value = window.whisperConfig.url || 'https://whisper.gaia.domains/v1/audio/transcriptions';
+            document.getElementById('whisperToken').value = window.whisperConfig.token || '';
+            document.getElementById('whisperLanguage').value = window.whisperConfig.language || 'auto';
+
+            console.log('Whisper configuration loaded:', window.whisperConfig);
+        }
+
+        function isValidUrl(string) {
+            try {
+                new URL(string);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+    </script>
+</body>
+
+</html>

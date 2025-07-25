@@ -171,8 +171,10 @@ impl TTSEngine {
             .ok_or_else(|| anyhow::anyhow!("speaker {} not found", name,))?;
 
         let mut audios = vec![];
+        let texts = gpt_sovits_rs::text::split_text(text, 75);
+        log::debug!("split text into {:#?}", texts);
 
-        for text in gpt_sovits_rs::text::split_text(text, 100) {
+        for text in texts {
             let (text_phone, text_bert) = gpt_sovits_rs::text::get_phone_and_bert(&self.g2p, text)?;
             let text_bert = text_bert.internal_cast_half(false);
 
@@ -352,12 +354,13 @@ fn load_32k_wav(path: &str) -> anyhow::Result<Vec<f32>> {
         wav_io::read_from_file(fs).map_err(|e| anyhow::anyhow!("read wav file failed: {}", e))?;
 
     if header.channels != 1 {
-        let (sample, _) = wav_io::utils::split_stereo_wave(audio_samples);
+        log::warn!("wav channels: {}, need mono", header.channels);
+        let sample = wav_io::utils::stereo_to_mono(audio_samples);
         audio_samples = sample;
     }
 
     if header.sample_rate != 32000 {
-        log::info!("wav sample rate: {}, need 32000", header.sample_rate);
+        log::warn!("wav sample rate: {}, need 32000", header.sample_rate);
         audio_samples = wav_io::resample::linear(audio_samples, 1, header.sample_rate, 32000);
     }
 
@@ -473,12 +476,13 @@ pub async fn tts_service(
 ) -> impl IntoResponse {
     log::info!("tts request: {:?}", req);
     match req.0.sample_rate {
-        None | Some(44000) | Some(32000) | Some(16000) | Some(8000) => {}
+        None | Some(48000) | Some(44000) | Some(32000) | Some(24000) | Some(16000) | Some(8000) => {
+        }
         Some(rate) => {
             return Response::builder()
                 .status(400)
                 .body(Body::from(format!(
-                    "Unsupported sample rate: {}, only 44000, 32000, 16000, 8000 are supported",
+                    "Unsupported sample rate: {}, only 48000, 44000, 32000, 24000, 16000, 8000 are supported",
                     rate
                 )))
                 .unwrap();
@@ -514,9 +518,10 @@ pub async fn tts_service(
                 }
             }
         }
-        None => {
-            todo!()
-        }
+        None => Response::builder()
+            .status(500)
+            .body(Body::from("TTS service is not available"))
+            .unwrap(),
     }
 }
 
@@ -526,12 +531,13 @@ pub async fn tts_batch_service(
 ) -> impl IntoResponse {
     log::info!("tts_batch_service request: {:?}", req);
     match req.0.sample_rate {
-        None | Some(44000) | Some(32000) | Some(16000) | Some(8000) => {}
+        None | Some(48000) | Some(44000) | Some(32000) | Some(24000) | Some(16000) | Some(8000) => {
+        }
         Some(rate) => {
             return Response::builder()
                 .status(400)
                 .body(Body::from(format!(
-                    "Unsupported sample rate: {}, only 44000, 32000, 16000, 8000 are supported",
+                    "Unsupported sample rate: {}, only 48000, 44000, 32000, 24000, 16000, 8000 are supported",
                     rate
                 )))
                 .unwrap();
@@ -572,12 +578,13 @@ pub async fn tts_stream_service(
 ) -> impl IntoResponse {
     log::info!("tts stream request: {:?}", req);
     match req.0.sample_rate {
-        None | Some(44000) | Some(32000) | Some(16000) | Some(8000) => {}
+        None | Some(48000) | Some(44000) | Some(32000) | Some(24000) | Some(16000) | Some(8000) => {
+        }
         Some(rate) => {
             return Response::builder()
                 .status(400)
                 .body(Body::from(format!(
-                    "Unsupported sample rate: {}, only 44000, 32000, 16000, 8000 are supported",
+                    "Unsupported sample rate: {}, only 48000, 44000, 32000, 24000, 16000, 8000 are supported",
                     rate
                 )))
                 .unwrap();

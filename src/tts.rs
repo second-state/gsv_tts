@@ -2,8 +2,8 @@ use std::{collections::HashMap, sync::Arc};
 
 use axum::{body::Body, http::Response, response::IntoResponse};
 use futures::StreamExt;
-use gpt_sovits_rs::gsv::{SSL, SpeakerV2Pro, T2S, Vits};
-use gpt_sovits_rs::tch::{Device, Tensor};
+use gpt_sovits_rs::gsv::{SpeakerV2Pro, Vits, SSL, T2S};
+use gpt_sovits_rs::tch::{Device, Kind, Tensor};
 use gpt_sovits_rs::text::G2p;
 
 pub mod config {
@@ -65,7 +65,7 @@ pub struct SpeakerBuilder {
 impl SpeakerBuilder {
     pub fn new(ssl_path: &str) -> anyhow::Result<Self> {
         let device = Device::cuda_if_available();
-        assert!(device.is_cuda(), "Currently only cuda is supported");
+        // assert!(device.is_cuda(), "Currently only cuda is supported");
         let ssl = Arc::new(SSL::new(ssl_path, device)?);
         Ok(Self {
             vits: HashMap::new(),
@@ -133,12 +133,17 @@ impl TTSEngine {
         device: Device,
         ref_text: &str,
     ) -> anyhow::Result<()> {
-        let (ref_phone, ref_bert) = gpt_sovits_rs::text::get_phone_and_bert(&self.g2p, ref_text)?;
-        let ref_bert = ref_bert.internal_cast_half(false);
-        let ref_audio_32k = Tensor::from_slice(&ref_audio32k_samples)
-            .internal_cast_half(false)
+        let (ref_phone, mut ref_bert) =
+            gpt_sovits_rs::text::get_phone_and_bert(&self.g2p, ref_text)?;
+        if device.is_cuda() {
+            ref_bert = ref_bert.internal_cast_half(false);
+        }
+        let mut ref_audio_32k = Tensor::from_slice(&ref_audio32k_samples)
             .to_device(device)
             .unsqueeze(0);
+        if device.is_cuda() {
+            ref_audio_32k = ref_audio_32k.internal_cast_half(false)
+        }
         let refer = speaker.pre_handle_ref(ref_audio_32k)?;
         self.speakers.insert(
             speaker.name.clone(),
@@ -175,8 +180,11 @@ impl TTSEngine {
         log::debug!("split text into {:#?}", texts);
 
         for text in texts {
-            let (text_phone, text_bert) = gpt_sovits_rs::text::get_phone_and_bert(&self.g2p, text)?;
-            let text_bert = text_bert.internal_cast_half(false);
+            let (text_phone, mut text_bert) =
+                gpt_sovits_rs::text::get_phone_and_bert(&self.g2p, text)?;
+            if speaker.ref_bert.kind() == Kind::Half {
+                text_bert = text_bert.internal_cast_half(false);
+            }
 
             let audio_32k = speaker.speaker.infer(
                 (
@@ -242,8 +250,12 @@ impl TTSEngine {
             .ok_or_else(|| anyhow::anyhow!("speaker {} not found", name,))?;
 
         for text in gpt_sovits_rs::text::split_text(text, 100) {
-            let (text_phone, text_bert) = gpt_sovits_rs::text::get_phone_and_bert(&self.g2p, text)?;
-            let text_bert = text_bert.internal_cast_half(false);
+            let (text_phone, mut text_bert) =
+                gpt_sovits_rs::text::get_phone_and_bert(&self.g2p, text)?;
+
+            if speaker.ref_bert.kind() == Kind::Half {
+                text_bert = text_bert.internal_cast_half(false);
+            }
 
             let audio_32k = speaker.speaker.infer(
                 (
@@ -305,8 +317,10 @@ impl TTSEngine {
                 log::warn!("get phone and bert for {text} failed: {}", e);
                 continue;
             }
-            let (text_phone, text_bert) = r.unwrap();
-            let text_bert = text_bert.internal_cast_half(false);
+            let (text_phone, mut text_bert) = r.unwrap();
+            if speaker.ref_bert.kind() == Kind::Half {
+                text_bert = text_bert.internal_cast_half(false);
+            }
 
             let mut s = speaker.speaker.stream_infer(
                 (
@@ -378,7 +392,7 @@ impl TTSService {
         };
 
         let device = Device::cuda_if_available();
-        assert!(device.is_cuda(), "Currently only cuda is supported");
+        // assert!(device.is_cuda(), "Currently only cuda is supported");
 
         let mut builder = SpeakerBuilder::new(&config.ssl_model_path)?;
         let mut g2p_conf = gpt_sovits_rs::text::G2PConfig::new(config.mini_bart_g2p_path);

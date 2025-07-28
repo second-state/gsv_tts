@@ -2,7 +2,7 @@
 
 ## Install libtorch dependencies
 
-Regular Linux CPU
+Run the following commands under Linux.
 
 ```
 # download libtorch
@@ -36,6 +36,13 @@ curl -LO https://huggingface.co/L-jasmine/GPT_Sovits/resolve/main/v2pro/ssl_mode
 curl -LO https://huggingface.co/L-jasmine/GPT_Sovits/resolve/main/v2pro/bert_model.pt
 curl -LO https://huggingface.co/L-jasmine/GPT_Sovits/resolve/main/v2pro/g2pw_model.pt
 curl -LO https://huggingface.co/L-jasmine/GPT_Sovits/resolve/main/v2pro/mini-bart-g2p.pt
+```
+
+If you do not have Nvidia GPU and CUDA installed. You will download the following CPU over-write versions. 
+
+```
+curl -L -o t2s.pt https://huggingface.co/L-jasmine/GPT_Sovits/resolve/main/v2pro/t2s.cpu.pt
+curl -L -o vits.pt https://huggingface.co/L-jasmine/GPT_Sovits/resolve/main/v2pro/vits.cpu.pt
 ```
 
 ## Run the API server

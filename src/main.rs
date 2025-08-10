@@ -5,6 +5,7 @@ use axum::{
 };
 use clap::{Parser, command};
 use std::{collections::HashMap, fs};
+use tower_http::cors::CorsLayer;
 use tts::config::TTSConfig;
 
 use axum::extract::Query;
@@ -23,6 +24,13 @@ struct Args {
         env("GPT_SOVITS_CONFIG_PATH")
     )]
     config: String,
+    #[arg(
+        long,
+        default_value = "false",
+        env("TTS_ALLOW_CORS"),
+        action = clap::ArgAction::Set
+    )]
+    allow_cors: bool,
 }
 
 #[tokio::main]
@@ -38,7 +46,13 @@ async fn main() {
 
     let tts_state = tts::TTSService::create_with_config(tts).expect("create tts service failed");
 
-    let app = app(tts_state);
+    let mut app = app(tts_state);
+    if args.allow_cors {
+        log::info!("CORS is enabled");
+        app = app.layer(CorsLayer::permissive());
+    } else {
+        log::info!("CORS is disabled");
+    }
 
     log::info!("listening on {}", args.listen);
     // run it

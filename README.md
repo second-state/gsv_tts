@@ -2,14 +2,24 @@
 
 ## Install libtorch dependencies
 
-Run the following commands under Linux.
+Linux x86 CPU with or without CUDA and ROCm
 
 ```
 # download libtorch
 curl -LO https://download.pytorch.org/libtorch/cu124/libtorch-cxx11-abi-shared-with-deps-2.4.0%2Bcu124.zip
+unzip libtorch-cxx11-abi-shared-with-deps-2.4.0%2Bcu124.zip
+```
 
-unzip libtorch-cxx11-abi-shared-with-deps-2.4.0+cu124.zip
+MacOS on Apple Silicon (M-series) devices
 
+```
+curl -LO https://download.pytorch.org/libtorch/cpu/libtorch-macos-arm64-2.8.0.zip
+unzip libtorch-macos-arm64-2.8.0.zip
+```
+
+Then, tell the system where to find your LibTorch.
+
+```
 # Add to ~/.zprofile or ~/.bash_profile
 export LD_LIBRARY_PATH=$(pwd)/libtorch/lib:$LD_LIBRARY_PATH
 export LIBTORCH=$(pwd)/libtorch 
